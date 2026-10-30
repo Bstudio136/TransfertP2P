@@ -6,6 +6,11 @@
 <meta name="color-scheme" content="dark light" />
 <meta name="theme-color" content="#0a0e14" />
 <title>Transfert P2P — envoi de fichiers entre téléphones</title>
+
+<!-- AJOUT : bibliothèques pour le QR code et le scanner -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
 <style>
   *,*::before,*::after{box-sizing:border-box}
 
@@ -95,7 +100,6 @@
   .theme-toggle:hover{background:var(--card2);border-color:var(--accent)}
   .theme-toggle:active{transform:scale(.94)}
 
-  /* Langue : wrapper + menu déroulant */
   .lang-wrap{position:relative}
   .lang-menu{
     position:absolute;top:calc(100% + 8px);right:0;
@@ -164,7 +168,6 @@
   .btn:hover .ico{transform:scale(1.12) rotate(-4deg)}
   .btn.primary:hover .ico{transform:scale(1.15) rotate(6deg)}
 
-  /* Effet ripple */
   .ripple{
     position:absolute;border-radius:50%;pointer-events:none;
     background:radial-gradient(circle, rgba(255,255,255,.5) 0%, rgba(255,255,255,0) 70%);
@@ -275,7 +278,6 @@
     background:linear-gradient(90deg,var(--accent-lo),var(--accent),var(--accent-hi));
     transition:width .2s ease;
   }
-  /* Shimmer pendant le transfert */
   .file:not(.done):not(.bad) .bar>i{
     background:linear-gradient(90deg,
       var(--accent-lo) 0%, var(--accent) 30%, var(--accent-hi) 50%,
@@ -385,7 +387,6 @@
     100%{transform:translate(-50%,0) scale(1)}
   }
 
-  /* Feedback "copié" sur les boutons */
   .btn.copied{
     border-color:var(--ok)!important;
     color:var(--ok)!important;
@@ -395,6 +396,38 @@
     0%{transform:scale(1)}
     50%{transform:scale(1.06)}
     100%{transform:scale(1)}
+  }
+
+  /* AJOUT : styles pour le QR code et le scanner */
+  .qr-container{
+    display:flex;
+    justify-content:center;
+    margin:12px 0;
+    padding:12px;
+    background:#fff;
+    border-radius:16px;
+    box-shadow:var(--shadow);
+  }
+  .qr-container img, .qr-container canvas{
+    width:200px !important;
+    height:200px !important;
+    display:block;
+  }
+  #qr-scanner-video{
+    width:100%;
+    max-width:360px;
+    border-radius:16px;
+    display:block;
+    margin:0 auto 12px;
+    background:#000;
+  }
+  .scanner-box{
+    text-align:center;
+    padding:12px;
+  }
+  .scanner-box video{
+    max-height:50vh;
+    object-fit:cover;
   }
 </style>
 </head>
@@ -465,6 +498,8 @@
       <p class="hint" style="text-align:center;margin:0" data-i18n="pairing-code-hint">
         Saisis ce code sur l'autre téléphone (bouton « Recevoir »).
       </p>
+      <!-- AJOUT : conteneur pour le QR code -->
+      <div id="qr-container" class="qr-container" hidden></div>
       <div class="code-actions">
         <button class="btn ghost" id="btn-copy-code" type="button">📋 <span data-i18n="copy">Copier</span></button>
         <button class="btn ghost" id="btn-share-code" type="button">📤 <span data-i18n="share">Partager</span></button>
@@ -492,7 +527,16 @@
       <input type="text" id="join-code" inputmode="numeric" pattern="[0-9]*"
              maxlength="6" placeholder="······" autocomplete="one-time-code" />
       <button class="btn primary" id="btn-join" style="margin-top:16px" data-i18n="join-btn">Se connecter</button>
+      <!-- AJOUT : bouton pour scanner un QR code -->
+      <button class="btn ghost" id="btn-scan-qr" style="margin-top:8px" type="button">📷 Scanner un QR code</button>
       <div class="status" id="join-status" hidden><span class="spinner"></span><span data-i18n="searching">Recherche…</span></div>
+    </div>
+
+    <!-- AJOUT : zone de scan QR -->
+    <div id="qr-scanner-box" class="card scanner-box" hidden>
+      <video id="qr-scanner-video" playsinline muted></video>
+      <p class="hint" style="text-align:center">Pointez la caméra vers le QR code de l'expéditeur.</p>
+      <button class="btn ghost" id="btn-close-scanner" type="button">Fermer</button>
     </div>
 
     <div id="join-manual" hidden>
@@ -1026,7 +1070,6 @@ function toast(msg){
   const el = $('#toast');
   el.textContent = msg;
   el.classList.remove('show');
-  // Force reflow pour relancer l'animation
   void el.offsetWidth;
   el.classList.add('show');
   clearTimeout(toast._t);
@@ -1077,7 +1120,6 @@ async function copyField(el){
   }
 }
 
-/* Retire immédiatement un élément de fichier de la liste (fade-out) */
 function removeFileUI(handle){
   if (!handle) return;
   if (handle._blobUrl){
@@ -1094,25 +1136,74 @@ function removeFileUI(handle){
 }
 
 /* ============================================================
-   2. Hachage
+   2. Hachage — MODIF : via Web Worker pour ne pas bloquer l'UI
    ============================================================ */
-const HASH_BLOCK = 4 * 1024 * 1024;
-async function hashBlob(blob){
-  if (!(window.crypto && crypto.subtle && crypto.subtle.digest)) return null;
-  const parts = [];
-  if (blob.size === 0){
-    parts.push(new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array(0))));
-  } else {
-    for (let off = 0; off < blob.size; off += HASH_BLOCK){
-      const buf = await blob.slice(off, off + HASH_BLOCK).arrayBuffer();
-      parts.push(new Uint8Array(await crypto.subtle.digest('SHA-256', buf)));
+const HASH_BLOCK = 4 * 1024 * 1024; // 4 Mo par bloc
+
+/* Création d'un worker inline pour le hachage */
+const hashWorkerCode = `
+self.addEventListener('message', async (e) => {
+  const { chunks } = e.data; // chunks : tableau de ArrayBuffer
+  try {
+    const parts = [];
+    for (const buf of chunks) {
+      if (buf.byteLength === 0) {
+        parts.push(new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array(0))));
+      } else {
+        for (let off = 0; off < buf.byteLength; off += ${HASH_BLOCK}) {
+          const slice = buf.slice(off, off + ${HASH_BLOCK});
+          parts.push(new Uint8Array(await crypto.subtle.digest('SHA-256', slice)));
+        }
+      }
     }
+    const total = parts.reduce((a, p) => a + p.length, 0);
+    const all = new Uint8Array(total);
+    let o = 0;
+    for (const p of parts) { all.set(p, o); o += p.length; }
+    const final = new Uint8Array(await crypto.subtle.digest('SHA-256', all));
+    self.postMessage({ hash: final.buffer }, [final.buffer]);
+  } catch (err) {
+    self.postMessage({ error: err.message });
   }
-  const total = parts.reduce((a, p) => a + p.length, 0);
-  const all = new Uint8Array(total);
-  let o = 0;
-  for (const p of parts){ all.set(p, o); o += p.length; }
-  return new Uint8Array(await crypto.subtle.digest('SHA-256', all));
+});
+`;
+const hashWorkerBlob = new Blob([hashWorkerCode], { type: 'application/javascript' });
+const hashWorkerUrl = URL.createObjectURL(hashWorkerBlob);
+let hashWorker = null;
+
+function getHashWorker() {
+  if (!hashWorker) {
+    hashWorker = new Worker(hashWorkerUrl);
+  }
+  return hashWorker;
+}
+
+/* Remplace l'ancienne hashBlob par une version basée sur le worker */
+async function hashBlob(blob) {
+  if (!(window.crypto && crypto.subtle && crypto.subtle.digest)) return null;
+
+  // On lit tout le blob en ArrayBuffers (par blocs de HASH_BLOCK)
+  const chunks = [];
+  for (let off = 0; off < blob.size; off += HASH_BLOCK) {
+    const buf = await blob.slice(off, off + HASH_BLOCK).arrayBuffer();
+    chunks.push(buf);
+  }
+  // Si le blob est vide, on envoie un tableau vide (le worker gérera)
+  if (chunks.length === 0) chunks.push(new ArrayBuffer(0));
+
+  const worker = getHashWorker();
+  return new Promise((resolve, reject) => {
+    const onMessage = (e) => {
+      worker.removeEventListener('message', onMessage);
+      if (e.data.error) {
+        reject(new Error(e.data.error));
+      } else {
+        resolve(new Uint8Array(e.data.hash));
+      }
+    };
+    worker.addEventListener('message', onMessage);
+    worker.postMessage({ chunks }, chunks.map(c => c)); // transfert de buffers
+  });
 }
 
 /* ============================================================
@@ -1155,6 +1246,11 @@ const cancelled = new Set();
 
 let sessionTimer = null, sessionStartTime = 0;
 let pingTimer = null, currentRtt = null;
+
+/* AJOUT : gestion du streaming download */
+let streamWriter = null; // FileSystemWritableFileStream si dispo
+let streamFileHandle = null;
+let useStreamSaver = false; // fallback StreamSaver.js si présent (non inclus par défaut)
 
 /* ============================================================
    5. UI fichiers
@@ -1292,8 +1388,6 @@ function onControl(raw){
       finishReceive(msg);
       break;
     case 'file-cancel': {
-      /* FIX : on supprime le fichier côté receveur QUELLE QUE SOIT sa position
-         (en cours OU déjà terminé). Le téléchargement devient impossible. */
       const key = nidMap.get(msg.nid);
       const st  = store.get(key);
       if (st){
@@ -1324,14 +1418,43 @@ function snapshotHave(){
   return out;
 }
 
-function prepareReceive(msg){
+/* MODIF : prepareReceive gère maintenant le streaming si possible */
+async function prepareReceive(msg){
   let st = store.get(msg.key);
   if (!st || st.bytes > msg.size){
     st = { name: msg.name, size: msg.size, type: msg.type || '', hash: msg.hash,
-           chunks: [], bytes: 0, ui: null, done: false, cancelled: false, _blobUrl: null };
+           chunks: [], bytes: 0, ui: null, done: false, cancelled: false, _blobUrl: null,
+           streamWriter: null, streamHandle: null };
     store.set(msg.key, st);
   }
   nidMap.set(msg.nid, msg.key);
+
+  // AJOUT : tentative d'ouverture d'un flux d'écriture directe sur disque
+  if (!st.streamWriter && !st.done && !st.cancelled && !st._blobUrl) {
+    try {
+      // 1) File System Access API (Chrome / Edge / Android moderne)
+      if (window.showSaveFilePicker) {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: msg.name,
+          types: [{
+            description: 'Fichier',
+            accept: { [msg.type || 'application/octet-stream']: ['.' + (msg.name.split('.').pop() || 'bin')] }
+          }]
+        });
+        st.streamHandle = handle;
+        st.streamWriter = await handle.createWritable();
+      }
+      // 2) Fallback StreamSaver.js si chargé
+      else if (window.StreamSaver) {
+        st.streamWriter = window.StreamSaver.createWriteStream(msg.name);
+        useStreamSaver = true;
+      }
+    } catch (e) {
+      // L'utilisateur a annulé ou l'API n'est pas disponible : on reste sur Blob
+      st.streamWriter = null;
+      st.streamHandle = null;
+    }
+  }
 
   const ui = uiAddFile('in', msg.name, msg.size, st.bytes, { type: msg.type });
   st.ui = ui;
@@ -1342,7 +1465,7 @@ function prepareReceive(msg){
   }
 }
 
-function onBinary(ab){
+async function onBinary(ab){
   const u8 = new Uint8Array(ab);
   if (u8.length < 9 || u8[0] !== 1) return;
   const dv  = new DataView(ab);
@@ -1357,6 +1480,18 @@ function onBinary(ab){
   if (idx !== st.chunks.length) return;
 
   const payload = u8.slice(9);
+
+  // AJOUT : écriture directe dans le flux si disponible
+  if (st.streamWriter) {
+    try {
+      await st.streamWriter.write(payload);
+    } catch (e) {
+      // En cas d'erreur d'écriture, on bascule sur le stockage en mémoire
+      st.streamWriter = null;
+      st.streamHandle = null;
+    }
+  }
+
   st.chunks.push(payload);
   st.bytes += payload.length;
 
@@ -1371,6 +1506,12 @@ async function finishReceive(msg){
   const st  = store.get(key);
   if (!st || st.cancelled) return;
 
+  // AJOUT : fermeture du flux d'écriture si utilisé
+  if (st.streamWriter) {
+    try { await st.streamWriter.close(); } catch (e) {}
+    st.streamWriter = null;
+  }
+
   const blob = new Blob(st.chunks, { type: st.type || 'application/octet-stream' });
 
   if (blob.size !== st.size){
@@ -1380,7 +1521,6 @@ async function finishReceive(msg){
     return;
   }
   const actual = await hashBlob(blob);
-  /* FIX : le fichier a pu être annulé pendant await hashBlob() */
   if (st.cancelled || !store.has(key)) return;
   if (st.hash && actual && bytesToB64u(actual) !== st.hash){
     if (st.ui){ st.ui.el.classList.add('bad'); st.ui.update(st.size, t('bad-hash')); }
@@ -1405,6 +1545,8 @@ function addDownloadActions(ui, st){
   box.hidden = false;
   box.innerHTML = '';
 
+  // Si un flux d'écriture a déjà été utilisé (File System Access), le fichier est déjà sur disque.
+  // On peut quand même proposer un téléchargement Blob classique.
   const file = new File([st.blob], st.name, { type: st.type || 'application/octet-stream' });
 
   if (navigator.canShare && navigator.canShare({ files: [file] })){
@@ -1461,7 +1603,7 @@ async function sendOne(file){
       onCancel: () => {
         if (nid == null || cancelled.has(nid)) return;
         cancelled.add(nid);
-        removeFileUI(ui);                       // ← retrait immédiat
+        removeFileUI(ui);
         try { dc.send(JSON.stringify({ t: 'file-cancel', nid })); } catch(e){}
         vibrate(20);
       }
@@ -1589,6 +1731,9 @@ async function startHost(){
   setHostStatus(t('preparing'), 'spin');
   showView('v-host');
 
+  // AJOUT : génération du QR code
+  generateQR(pairingCode);
+
   try{
     const sdp = await createOfferSDP();
 
@@ -1625,6 +1770,25 @@ function setHostStatus(text, kind){
   el.className = 'status' + (kind === 'err' ? ' err' : kind === 'ok' ? ' ok' : '');
   el.innerHTML = (kind === 'spin' ? '<span class="spinner"></span>' : '') + '<span></span>';
   el.lastChild.textContent = text;
+}
+
+/* AJOUT : génération du QR code côté hôte */
+function generateQR(code){
+  const container = $('#qr-container');
+  if (!container || typeof qrcode === 'undefined') {
+    if (container) container.hidden = true;
+    return;
+  }
+  try {
+    const url = location.origin + location.pathname + '#join=' + code;
+    const qr = qrcode(0, 'M');
+    qr.addData(url);
+    qr.make();
+    container.innerHTML = qr.createImgTag(4, 4);
+    container.hidden = false;
+  } catch (e) {
+    container.hidden = true;
+  }
 }
 
 /* ============================================================
@@ -1675,6 +1839,24 @@ async function joinWithCode(){
     st.className = 'status err';
     st.textContent = t('signal-error');
   });
+}
+
+/* AJOUT : gestion du deep link #join=... */
+function checkDeepLink(){
+  const hash = location.hash;
+  const m = hash.match(/#join=(\d{6})/);
+  if (!m) return;
+  const code = m[1];
+  // Si on est en mode manuel, on bascule en auto pour le deep link
+  mode = 'ntfy';
+  $('#chk-manual').checked = false;
+  const manual = false;
+  $('#join-code-card').hidden = manual;
+  $('#join-manual').hidden = !manual;
+  showView('v-join');
+  $('#join-code').value = code;
+  // Lancement automatique de la connexion
+  setTimeout(() => joinWithCode(), 300);
 }
 
 /* ============================================================
@@ -1764,6 +1946,14 @@ function cleanup(){
   if (dc){ try { dc.close(); } catch(e){} dc = null; }
   if (pc){ try { pc.close(); } catch(e){} pc = null; }
   stopPing(); stopSessionTimer();
+
+  // AJOUT : fermeture des flux d'écriture en cours
+  store.forEach(st => {
+    if (st.streamWriter) {
+      try { st.streamWriter.close(); } catch(e) {}
+      st.streamWriter = null;
+    }
+  });
 
   connectedOnce = false;
   joinedOnce = false;
@@ -1881,7 +2071,6 @@ document.addEventListener('click', (e) => {
   if (!e.target.closest('.lang-wrap')) closeLangMenu();
 });
 
-/* === Effet ripple sur tous les boutons === */
 document.addEventListener('pointerdown', e => {
   const btn = e.target.closest('.btn, .theme-toggle, .lang-menu button, .file .actions button, .file .actions a');
   if (!btn) return;
@@ -1959,6 +2148,84 @@ $('#btn-copy-answer').onclick  = () => copyField($('#join-answer-out')).then(() 
 $('#btn-host-connect').onclick = manualHostConnect;
 $('#btn-join-gen').onclick     = manualJoinGenerate;
 
+/* AJOUT : scanner QR */
+let qrScannerStream = null;
+let qrScanInterval = null;
+
+$('#btn-scan-qr').onclick = async () => {
+  const box = $('#qr-scanner-box');
+  const video = $('#qr-scanner-video');
+  box.hidden = false;
+
+  try {
+    qrScannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    video.srcObject = qrScannerStream;
+    await video.play();
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const scan = async () => {
+      if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+        qrScanInterval = requestAnimationFrame(scan);
+        return;
+      }
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+      let code = null;
+
+      // 1) BarcodeDetector natif
+      if ('BarcodeDetector' in window) {
+        try {
+          const detector = new BarcodeDetector({ formats: ['qr_code'] });
+          const barcodes = await detector.detect(video);
+          if (barcodes.length > 0) code = barcodes[0].rawValue;
+        } catch (e) { /* fallback */ }
+      }
+
+      // 2) Fallback jsQR
+      if (!code && typeof jsQR !== 'undefined') {
+        const qr = jsQR(imageData.data, imageData.width, imageData.height);
+        if (qr) code = qr.data;
+      }
+
+      if (code) {
+        stopQRScanner();
+        const m = code.match(/#join=(\d{6})/);
+        const foundCode = m ? m[1] : (code.match(/\d{6}/) || [])[0];
+        if (foundCode) {
+          $('#join-code').value = foundCode;
+          joinWithCode();
+        } else {
+          toast(t('code-invalid') + code);
+        }
+        return;
+      }
+
+      qrScanInterval = requestAnimationFrame(scan);
+    };
+
+    qrScanInterval = requestAnimationFrame(scan);
+  } catch (e) {
+    toast('Caméra indisponible : ' + e.message);
+    box.hidden = true;
+  }
+};
+
+$('#btn-close-scanner').onclick = stopQRScanner;
+
+function stopQRScanner() {
+  if (qrScanInterval) { cancelAnimationFrame(qrScanInterval); qrScanInterval = null; }
+  if (qrScannerStream) {
+    qrScannerStream.getTracks().forEach(t => t.stop());
+    qrScannerStream = null;
+  }
+  $('#qr-scanner-box').hidden = true;
+}
+
 $('#btn-pick').onclick = () => $('#file-input').click();
 $('#file-input').onchange = e => {
   const files = Array.from(e.target.files || []);
@@ -2006,6 +2273,9 @@ window.matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', 
 if (!(window.crypto && crypto.subtle)){
   console.warn("crypto.subtle indisponible : vérification par empreinte désactivée.");
 }
+
+// AJOUT : vérification du deep link au chargement
+checkDeepLink();
 
 })();
 </script>

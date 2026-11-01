@@ -507,7 +507,8 @@ const I18N = {
     'copy-manual': 'Copie impossible — sélectionne et copie à la main',
     'share-unavailable': 'Partage indisponible',
     'connect-first': "Connecte-toi d'abord à un appareil",
-    'clear-confirm': "Vider la liste ? Les fichiers en mémoire seront supprimés sur CET appareil ET sur l'autre (les fichiers déjà téléchargés restent sur le disque).",
+    'clear-confirm': 'Vider la liste ? Les fichiers en mémoire seront supprimés sur CET appareil ET sur l\'autre (les fichiers déjà téléchargés restent sur le disque).',
+    'clear-busy': "Attends la fin du transfert en cours avant de vider la liste.",
     'list-cleared-by-peer': "L'autre appareil a vidé la liste.",
     'enter-pairing-code': 'Saisis les 6 chiffres du code',
     'code-expired': "Code expiré. Redemande un code à l'autre appareil.",
@@ -605,8 +606,9 @@ const I18N = {
     'copy-manual': 'Copy failed — select and copy manually',
     'share-unavailable': 'Sharing unavailable',
     'connect-first': 'Connect to a device first',
-    'clear-confirm': "Clear the list? Files in memory will be removed on THIS device AND on the other (files already downloaded stay on disk).",
-    'list-cleared-by-peer': "The other device cleared the list.",
+    'clear-confirm': 'Clear the list? Files in memory will be removed on THIS device AND on the other (files already downloaded stay on disk).',
+    'clear-busy': 'Wait for the current transfer to finish before clearing the list.',
+    'list-cleared-by-peer': 'The other device cleared the list.',
     'enter-pairing-code': 'Enter the 6-digit code',
     'code-expired': 'Code expired. Ask for a new code from the other device.',
     'crypto-required': 'This browser has no secure random generator. Update it.',
@@ -703,6 +705,7 @@ const I18N = {
     'share-unavailable': 'Condivisione non disponibile',
     'connect-first': 'Connettiti prima a un dispositivo',
     'clear-confirm': "Svuotare l'elenco? I file in memoria saranno rimossi su QUESTO dispositivo E sull'altro (i file già scaricati restano sul disco).",
+    'clear-busy': 'Attendi la fine del trasferimento in corso prima di svuotare l\'elenco.',
     'list-cleared-by-peer': "L'altro dispositivo ha svuotato l'elenco.",
     'enter-pairing-code': 'Inserisci le 6 cifre del codice',
     'code-expired': "Codice scaduto. Richiedi un nuovo codice all'altro dispositivo.",
@@ -799,8 +802,9 @@ const I18N = {
     'copy-manual': 'Kopyalama başarısız — metni seçip elle kopyala',
     'share-unavailable': 'Paylaşım kullanılamıyor',
     'connect-first': 'Önce bir cihaza bağlan',
-    'clear-confirm': "Liste temizlensin mi? Bellekteki dosyalar BU cihazda VE diğer cihazda silinecek (indirilmiş dosyalar diskte kalır).",
-    'list-cleared-by-peer': "Diğer cihaz listeyi temizledi.",
+    'clear-confirm': 'Liste temizlensin mi? Bellekteki dosyalar BU cihazda VE diğer cihazda silinecek (indirilmiş dosyalar diskte kalır).',
+    'clear-busy': 'Listeyi temizlemeden önce devam eden transferin bitmesini bekle.',
+    'list-cleared-by-peer': 'Diğer cihaz listeyi temizledi.',
     'enter-pairing-code': '6 haneli kodu gir',
     'code-expired': 'Kodun süresi doldu. Diğer cihazdan yeni kod iste.',
     'crypto-required': 'Bu tarayıcıda güvenli rastgele sayı üreteci yok. Güncelle.',
@@ -1152,10 +1156,10 @@ function clearFileListUI(opts){
     st.ui = null;
   });
   if (opts.wipeStore){
-    // ⚠️ libère vraiment la mémoire (chunks + blobs)
+    // Libération mémoire complète (chunks + blobs + mapping nid→key)
+    store.forEach(st => { st.chunks = []; st.blob = null; st.bytes = 0; });
     store.clear();
     nidMap.clear();
-    haveRemote = {};
   }
   $('#file-list').innerHTML = '';
 }
@@ -1426,6 +1430,7 @@ function onControl(raw){
       break;
     case 'list-clear':
       clearFileListUI({ wipeStore: true });
+      try { dc.send(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
       toast(t('list-cleared-by-peer'));
       break;
     case 'file':
@@ -1440,13 +1445,10 @@ function onControl(raw){
       if (st){
         if (st.ui) removeFileUI(st.ui);
         if (st._blobUrl){ try { URL.revokeObjectURL(st._blobUrl); } catch(_){} st._blobUrl = null; }
-
-        // ⬇️ Libération mémoire explicite (chunks + blob)
         st.cancelled = true;
         st.chunks = [];
         st.blob = null;
         st.bytes = 0;
-
         store.delete(key);
         toast(t('cancelled-by-sender'));
         vibrate(25);
@@ -1455,13 +1457,6 @@ function onControl(raw){
       try { dc.send(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
       break;
     }
-    case 'ping':
-      try { dc.send(JSON.stringify({ t: 'pong', ts: msg.ts })); } catch(_){}
-      break;
-    case 'pong':
-      currentRtt = performance.now() - msg.ts;
-      updateRttDisplay();
-      break;
   }
 }
 
@@ -2317,10 +2312,12 @@ $('#btn-back').onclick        = goHome;
 
 $('#btn-clear').onclick = () => {
   if (!$('#file-list').children.length) return;
+  if (busy){ toast(t('clear-busy')); return; }
   if (!confirm(t('clear-confirm'))) return;
   clearFileListUI({ wipeStore: true });
   if (dc && dc.readyState === 'open'){
     try { dc.send(JSON.stringify({ t: 'list-clear' })); } catch(_){}
+    try { dc.send(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
   }
 };
 

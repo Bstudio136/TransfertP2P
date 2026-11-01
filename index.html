@@ -157,6 +157,8 @@
   .status.err{color:var(--err)}
   .status.warn{color:var(--warn)}
   .status.ok::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none;animation:pulseDot 1.6s ease-in-out infinite;}
+  .status.err::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--err);flex:none;}
+  .status.warn::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);flex:none;}
   @keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.55);transform:scale(1)}50%{box-shadow:0 0 0 7px rgba(34,197,94,0);transform:scale(1.15)}}
   .spinner{width:15px;height:15px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex:none}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -1457,6 +1459,13 @@ function onControl(raw){
       try { dc.send(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
       break;
     }
+    case 'ping':
+      try { dc.send(JSON.stringify({ t: 'pong', ts: msg.ts })); } catch(_){}
+      break;
+    case 'pong':
+      currentRtt = performance.now() - msg.ts;
+      updateRttDisplay();
+      break;
   }
 }
 
@@ -2072,6 +2081,11 @@ function checkSasVerified(){
     updateSasUI();
     toast(t('sas-verified-toast'));
     vibrate(30);
+    // Cacher la carte SAS après 2 s (gain d'espace mobile)
+    setTimeout(() => {
+      const card = $('#sas-card');
+      if (card && sasVerified) card.hidden = true;
+    }, 2000);
   }
 }
 

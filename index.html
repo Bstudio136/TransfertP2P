@@ -2093,6 +2093,9 @@ function handleSasRejection(message){
   sasRejected = true;
   $('#btn-pick').disabled = true;
 
+  // Purge les fichiers d'une session rejetée (peut être un MITM)
+  clearFileListUI({ wipeStore: true });
+
   // UI
   const codeEl = $('#sas-code');
   if (codeEl) codeEl.classList.add('mismatch');

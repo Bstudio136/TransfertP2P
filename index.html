@@ -507,7 +507,8 @@ const I18N = {
     'copy-manual': 'Copie impossible — sélectionne et copie à la main',
     'share-unavailable': 'Partage indisponible',
     'connect-first': "Connecte-toi d'abord à un appareil",
-    'clear-confirm': 'Vider la liste affichée ? (les fichiers reçus restent en mémoire pour reprise)',
+    'clear-confirm': "Vider la liste ? Les fichiers en mémoire seront supprimés sur CET appareil ET sur l'autre (les fichiers déjà téléchargés restent sur le disque).",
+    'list-cleared-by-peer': "L'autre appareil a vidé la liste.",
     'enter-pairing-code': 'Saisis les 6 chiffres du code',
     'code-expired': "Code expiré. Redemande un code à l'autre appareil.",
     'crypto-required': 'Ce navigateur ne fournit pas de générateur aléatoire sécurisé. Mets-le à jour.',
@@ -604,7 +605,8 @@ const I18N = {
     'copy-manual': 'Copy failed — select and copy manually',
     'share-unavailable': 'Sharing unavailable',
     'connect-first': 'Connect to a device first',
-    'clear-confirm': 'Clear the displayed list? (received files stay in memory for resume)',
+    'clear-confirm': "Clear the list? Files in memory will be removed on THIS device AND on the other (files already downloaded stay on disk).",
+    'list-cleared-by-peer': "The other device cleared the list.",
     'enter-pairing-code': 'Enter the 6-digit code',
     'code-expired': 'Code expired. Ask for a new code from the other device.',
     'crypto-required': 'This browser has no secure random generator. Update it.',
@@ -700,7 +702,8 @@ const I18N = {
     'copy-manual': 'Copia impossibile — seleziona e copia manualmente',
     'share-unavailable': 'Condivisione non disponibile',
     'connect-first': 'Connettiti prima a un dispositivo',
-    'clear-confirm': "Svuotare l'elenco visualizzato? (i file ricevuti restano in memoria per la ripresa)",
+    'clear-confirm': "Svuotare l'elenco? I file in memoria saranno rimossi su QUESTO dispositivo E sull'altro (i file già scaricati restano sul disco).",
+    'list-cleared-by-peer': "L'altro dispositivo ha svuotato l'elenco.",
     'enter-pairing-code': 'Inserisci le 6 cifre del codice',
     'code-expired': "Codice scaduto. Richiedi un nuovo codice all'altro dispositivo.",
     'crypto-required': 'Questo browser non dispone di un generatore casuale sicuro. Aggiornalo.',
@@ -796,7 +799,8 @@ const I18N = {
     'copy-manual': 'Kopyalama başarısız — metni seçip elle kopyala',
     'share-unavailable': 'Paylaşım kullanılamıyor',
     'connect-first': 'Önce bir cihaza bağlan',
-    'clear-confirm': 'Görünen liste temizlensin mi? (alınan dosyalar devam için bellekte kalır)',
+    'clear-confirm': "Liste temizlensin mi? Bellekteki dosyalar BU cihazda VE diğer cihazda silinecek (indirilmiş dosyalar diskte kalır).",
+    'list-cleared-by-peer': "Diğer cihaz listeyi temizledi.",
     'enter-pairing-code': '6 haneli kodu gir',
     'code-expired': 'Kodun süresi doldu. Diğer cihazdan yeni kod iste.',
     'crypto-required': 'Bu tarayıcıda güvenli rastgele sayı üreteci yok. Güncelle.',
@@ -1140,12 +1144,19 @@ function removeFileUI(handle){
   setTimeout(() => el.remove(), 190);
 }
 
-function clearFileListUI(){
+function clearFileListUI(opts){
+  opts = opts || {};
   store.forEach(st => {
     if (st.ui && st.ui._blobUrl){ try { URL.revokeObjectURL(st.ui._blobUrl); } catch(_){} st.ui._blobUrl = null; }
     if (st._blobUrl){ try { URL.revokeObjectURL(st._blobUrl); } catch(_){} st._blobUrl = null; }
     st.ui = null;
   });
+  if (opts.wipeStore){
+    // ⚠️ libère vraiment la mémoire (chunks + blobs)
+    store.clear();
+    nidMap.clear();
+    haveRemote = {};
+  }
   $('#file-list').innerHTML = '';
 }
 
@@ -1413,6 +1424,10 @@ function onControl(raw){
     case 'sas-reject':
       onSasPeerReject();
       break;
+    case 'list-clear':
+      clearFileListUI({ wipeStore: true });
+      toast(t('list-cleared-by-peer'));
+      break;
     case 'file':
       prepareReceive(msg);
       break;
@@ -1425,7 +1440,13 @@ function onControl(raw){
       if (st){
         if (st.ui) removeFileUI(st.ui);
         if (st._blobUrl){ try { URL.revokeObjectURL(st._blobUrl); } catch(_){} st._blobUrl = null; }
+
+        // ⬇️ Libération mémoire explicite (chunks + blob)
         st.cancelled = true;
+        st.chunks = [];
+        st.blob = null;
+        st.bytes = 0;
+
         store.delete(key);
         toast(t('cancelled-by-sender'));
         vibrate(25);
@@ -2297,7 +2318,10 @@ $('#btn-back').onclick        = goHome;
 $('#btn-clear').onclick = () => {
   if (!$('#file-list').children.length) return;
   if (!confirm(t('clear-confirm'))) return;
-  clearFileListUI();
+  clearFileListUI({ wipeStore: true });
+  if (dc && dc.readyState === 'open'){
+    try { dc.send(JSON.stringify({ t: 'list-clear' })); } catch(_){}
+  }
 };
 
 function feedbackCopied(btn){

@@ -2081,11 +2081,10 @@ function checkSasVerified(){
     updateSasUI();
     toast(t('sas-verified-toast'));
     vibrate(30);
-    // Cacher la carte SAS après 2 s (gain d'espace mobile)
-    setTimeout(() => {
-      const card = $('#sas-card');
-      if (card && sasVerified) card.hidden = true;
-    }, 2000);
+    
+    // Cacher la carte SAS IMMÉDIATEMENT
+    const card = $('#sas-card');
+    if (card) card.hidden = true;
   }
 }
 
@@ -2201,8 +2200,11 @@ function startPing(){
     if (!dc || dc.readyState !== 'open') return;
     try { dc.send(JSON.stringify({ t: 'ping', ts: performance.now() })); } catch(e){}
   };
-  sendPing();
-  pingTimer = setInterval(sendPing, 5000);
+  // Attendre 1 seconde pour être sûr que le canal est prêt
+  setTimeout(() => {
+    sendPing();
+    pingTimer = setInterval(sendPing, 5000);
+  }, 1000);
 }
 function stopPing(){
   if (pingTimer){ clearInterval(pingTimer); pingTimer = null; }

@@ -149,8 +149,63 @@
     0%,100%{text-shadow:0 0 24px var(--accent-soft);transform:scale(1)}
     50%{text-shadow:0 0 36px var(--accent), 0 0 60px var(--accent-soft);transform:scale(1.015)}
   }
-  .code-actions{display:flex;gap:8px;margin-top:8px}
-  .code-actions .btn{flex:1;margin:0;min-height:44px;font-size:.82rem;padding:10px}
+
+  /* =========================================
+     BOUTONS D'ACTION (COPIER / PARTAGER) PRO
+     ========================================= */
+  .code-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .code-actions .btn {
+    flex: 1;
+    margin: 0;
+    min-height: 48px;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 12px;
+    letter-spacing: 0.02em;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .code-actions .btn:hover {
+    transform: translateY(-2px);
+  }
+  .code-actions .btn:active {
+    transform: translateY(0) scale(0.97);
+  }
+
+  /* Bouton "Copier" (Secondaire) */
+  .code-actions .btn.ghost {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .code-actions .btn.ghost:hover {
+    background: var(--border);
+    border-color: var(--muted);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  /* Bouton "Partager" (Primaire adouci) */
+  .code-actions .btn.share-btn {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    box-shadow: 0 4px 16px var(--accent-soft);
+  }
+  .code-actions .btn.share-btn:hover {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+    box-shadow: 0 6px 20px var(--accent-soft);
+  }
 
   label{display:block;font-size:.74rem;color:var(--muted);margin:16px 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
   input[type=text],textarea{width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px;font:inherit;outline:none;transition:border-color .15s,box-shadow .15s;}
@@ -358,10 +413,13 @@
         Copie l'invitation ou scanne le QR code. Vérifie ensuite le code de sécurité.
       </p>
       <div id="qr-container" class="qr-container" hidden></div>
+      
+      <!-- Boutons améliorés -->
       <div class="code-actions">
         <button class="btn ghost" id="btn-copy-code" type="button">📋 <span data-i18n="copy">Copier</span></button>
-        <button class="btn ghost" id="btn-share-code" type="button">📤 <span data-i18n="share">Partager</span></button>
+        <button class="btn share-btn" id="btn-share-code" type="button">📤 <span data-i18n="share">Partager</span></button>
       </div>
+
       </div>
        <div class="status" id="host-status" role="status" aria-live="polite"><span class="spinner"></span><span data-i18n="preparing">Préparation…</span></div>
     </div>

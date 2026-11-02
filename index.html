@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="dark light" />
-<meta name="theme-color" content="#0a0e14" />
+<meta name="theme-color" content="#0a0a0a" />
 <meta name="description" content="Transfère tes fichiers directement entre appareils avec WebRTC. Aucun fichier n'est stocké sur un serveur." />
 <title>Transfert P2P — envoi de fichiers entre téléphones</title>
 
@@ -15,10 +15,19 @@
   *,*::before,*::after{box-sizing:border-box}
   :root{
     color-scheme: dark;
-    --bg:#0a0e14; --bg-grad:radial-gradient(ellipse at 50% -10%, #141b25 0%, #0a0e14 65%);
-    --card:#141b25; --card2:#1c2532; --text:#e9eff7; --muted:#8fa0b6; --border:#26303f;
-    --accent:#f5b915; --accent-hi:#fbbf24; --accent-lo:#b8860b; --on-accent:#1a1200;
-    --accent-soft:rgba(245,185,21,.12);
+    /* --- THÈME SOMBRE "ONE LINK" --- */
+    --bg:#0a0a0a; 
+    --bg-grad:radial-gradient(ellipse at 50% -10%, #1c1c1c 0%, #0a0a0a 65%);
+    --card:#161616; 
+    --card2:#1c1c1c; 
+    --text:#f5f1e6; 
+    --muted:#a8a29a; 
+    --border:#2a2a2a;
+    --accent:#d4af37; 
+    --accent-hi:#f5c518; 
+    --accent-lo:#b8860b; 
+    --on-accent:#1a1200;
+    --accent-soft:rgba(212, 175, 55, .12);
     --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
     --radius:18px; --shadow:0 10px 40px -10px rgba(0,0,0,.55);
     --footer-h:72px;
@@ -234,7 +243,7 @@
     font-size:clamp(1.1rem,3vw,1.5rem);font-weight:700;color:var(--accent);text-align:center;padding:24px;
   }
   body.dragging .drop-overlay{display:flex;animation:dropPulse 1.2s ease-in-out infinite}
-  @keyframes dropPulse{0%,100%{border-color:var(--accent);background:var(--accent-soft)}50%{border-color:var(--accent-hi);background:rgba(245,185,21,.2)}}
+  @keyframes dropPulse{0%,100%{border-color:var(--accent);background:var(--accent-soft)}50%{border-color:var(--accent-hi);background:rgba(212,175,55,.2)}}
 
   .hint{font-size:.78rem;color:var(--muted);line-height:1.55}
   .toggle{
@@ -944,7 +953,7 @@ function updateMetaThemeColor(){
   const attr = document.documentElement.getAttribute('data-theme');
   const sysLight = window.matchMedia('(prefers-color-scheme: light)').matches;
   const isLight = attr === 'light' || (attr !== 'dark' && sysLight);
-  meta.content = isLight ? '#f5efe0' : '#0a0e14';
+  meta.content = isLight ? '#f5efe0' : '#0a0a0a';
 }
 function applyTheme(pref){
   if (pref === 'auto'){

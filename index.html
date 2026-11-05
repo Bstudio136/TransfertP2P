@@ -8,6 +8,13 @@
 <meta name="description" content="Transfère tes fichiers directement entre appareils avec WebRTC. Aucun fichier n'est stocké sur un serveur." />
 <title>Transfert P2P — envoi de fichiers entre téléphones</title>
 
+<!-- ====== FAVICON / ICÔNE DE L'APPLICATION ====== -->
+<link rel="icon" type="image/png" sizes="any" href="https://cdn.jsdelivr.net/gh/Bstudio136/TransfertP2P@main/p2p.png" />
+<link rel="shortcut icon" type="image/png" href="https://cdn.jsdelivr.net/gh/Bstudio136/TransfertP2P@main/p2p.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="https://cdn.jsdelivr.net/gh/Bstudio136/TransfertP2P@main/p2p.png" />
+<meta name="msapplication-TileImage" content="https://cdn.jsdelivr.net/gh/Bstudio136/TransfertP2P@main/p2p.png" />
+<meta name="msapplication-TileColor" content="#0a0a0a" />
+
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
@@ -343,6 +350,17 @@
   #qr-scanner-video{width:100%;max-width:360px;border-radius:16px;display:block;margin:0 auto 12px;background:#000;}
   .scanner-box{text-align:center;padding:12px;}
   .scanner-box video{max-height:50vh;object-fit:cover;}
+
+  /* ====== LOGO DANS LE HEADER ====== */
+  #h1-title{display:flex;align-items:center;gap:10px}
+  #h1-title .h1-logo{
+    width:32px;height:32px;border-radius:8px;flex:none;object-fit:cover;
+    box-shadow:0 2px 8px rgba(0,0,0,.35);
+    background:#0a0a0a;
+  }
+  @media (min-width: 900px){
+    #h1-title .h1-logo{width:38px;height:38px;border-radius:10px}
+  }
 </style>
 </head>
 <body>
@@ -532,6 +550,7 @@
    ============================================================ */
 const LANG_KEY = 'ftxp2p-lang';
 const LANGUAGES = ['fr','en','it','tr'];
+const LOGO_URL = 'https://cdn.jsdelivr.net/gh/Bstudio136/TransfertP2P@main/p2p.png';
 
 const I18N = {
   fr: {
@@ -981,8 +1000,13 @@ function applyI18n(){
     if (v !== undefined) el.placeholder = v;
   });
 
+  // Titre avec logo intégré
   const h1 = $('#h1-title');
-  if (h1) h1.innerHTML = t('h1-html');
+  if (h1) {
+    h1.innerHTML =
+      '<img class="h1-logo" src="' + LOGO_URL + '" alt="" width="32" height="32" loading="eager" decoding="async" />' +
+      '<span>' + t('h1-html') + '</span>';
+  }
 
   const drop = $('#drop-overlay');
   if (drop) drop.textContent = '📥 ' + t('drop-to-send');

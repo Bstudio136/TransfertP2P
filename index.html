@@ -1907,7 +1907,16 @@ async function startHost(){
 
   // --- Mode auto (Trystero) ---
   const roomId = TOPIC_PREFIX + pairingCode;
-  trysteroRoom = window.Trystero.joinRoom({appId: 'transfertp2p'}, roomId);
+  const myRelays = [
+    'wss://relay.damus.io',
+    'wss://nos.lol',
+    'wss://relay.primal.net',
+    'wss://relay.nostr.band'
+  ];
+  trysteroRoom = window.Trystero.joinRoom({
+    appId: 'transfertp2p',
+    relayUrls: myRelays
+  }, roomId);
 
   trysteroRoom.onPeerJoin(peerId => {
     onConnected();
@@ -1993,7 +2002,16 @@ async function joinWithCode(){
     st.textContent = t('code-expired');
   }, PAIRING_TTL);
 
-  trysteroRoom = window.Trystero.joinRoom({appId: 'transfertp2p'}, topic);
+  const myRelays = [
+    'wss://relay.damus.io',
+    'wss://nos.lol',
+    'wss://relay.primal.net',
+    'wss://relay.nostr.band'
+  ];
+  trysteroRoom = window.Trystero.joinRoom({
+    appId: 'transfertp2p',
+    relayUrls: myRelays
+  }, topic);
 
   trysteroRoom.onPeerJoin(peerId => {
     onConnected();

@@ -1369,7 +1369,7 @@ const NTFY = 'https://ntfy.sh/';
 const TOPIC_PREFIX = 'ftx7q-';
 const PAIRING_TTL = 15 * 60 * 1000; // 15 min
 
-const OFFER_INTERVAL = 15 * 1000;
+const OFFER_INTERVAL = 15 * 1000const OFFER_INTERVAL = 30 * 1000; // 30 secondes;
 
 /* ============================================================
    4. État global
@@ -1865,11 +1865,20 @@ async function publish(topic, payload, attempt){
     throw e;
   }
   if (response.status === 429) {
-    if (attempt >= 4) throw new Error('429');
-    const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
-    await new Promise(r => setTimeout(r, retryAfter * 1000));
+    if (attempt >= 4) {
+        throw new Error('429');
+    }
+    // 1. On lit l'en-tête Retry-After, sinon on utilise un délai de base.
+    let retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
+    // 2. On ajoute un backoff exponentiel pour ne pas marteler le serveur.
+    const backoffDelay = Math.min(Math.pow(2, attempt) * 1000, 60000); // Max 60 secondes
+    // 3. On attend le plus long des deux délais.
+    const delay = Math.max(retryAfter * 1000, backoffDelay);
+
+    console.warn(`Rate limit atteint (429). Nouvelle tentative dans ${delay / 1000} secondes.`);
+    await new Promise(r => setTimeout(r, delay));
     return publish(topic, payload, attempt + 1);
-  }
+}
   if (!response.ok) throw new Error('Signalisation HTTP ' + response.status);
 }
 
@@ -1991,8 +2000,7 @@ async function startHost(){
 
   await pub(true);
   if (fallbackDone) return;
-
-  offerTimer = setInterval(() => pub(false), OFFER_INTERVAL);
+  // On ne fait plus de setInterval, on attend simplement la réponse.
   setHostStatus(t('waiting-peer'), 'spin');
 }
 

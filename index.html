@@ -1367,7 +1367,7 @@ const ICE_CONFIG = {
 };
 const NTFY = 'https://ntfy.sh/';
 const TOPIC_PREFIX = 'ftx7q-';
-const PAIRING_TTL = 5 * 60 * 1000; // 5 min
+const PAIRING_TTL = 15 * 60 * 1000; // 15 min
 
 const OFFER_INTERVAL = 15 * 1000;
 
@@ -1473,7 +1473,7 @@ function wirePC(){
 function waitIce(){
   return new Promise(resolve => {
     if (pc.iceGatheringState === 'complete') return resolve();
-    const timer = setTimeout(done, 6000);
+    const timer = setTimeout(done, 9000);
     function check(){ if (pc.iceGatheringState === 'complete') done(); }
     function done(){
       clearTimeout(timer);
@@ -1843,7 +1843,7 @@ function subscribe(topic, onMsg, onFail){
   };
   src.onerror = () => {
     if (closed) return;
-    if (++errors >= 4) {
+    if (++errors >= 8) {
       closed = true;
       try { src.close(); } catch(_){}
       if (onFail) onFail();
@@ -1865,7 +1865,7 @@ async function publish(topic, payload, attempt){
     throw e;
   }
   if (response.status === 429) {
-    if (attempt >= 2) throw new Error('429');
+    if (attempt >= 4) throw new Error('429');
     const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
     return publish(topic, payload, attempt + 1);

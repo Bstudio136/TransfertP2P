@@ -638,6 +638,8 @@ const I18N = {
     'share-text': "Code Transfert P2P : {code}\nOuvre l'app et appuie sur « Recevoir ».",
     'share-title': 'Transfert P2P',
     'lang-menu-label': 'Choisir la langue',
+    'rate-limited': 'Service de signalisation saturé (429). Bascule en mode manuel…',
+    'crypto-unavailable': "Vérification de sécurité (SAS) indisponible : ce navigateur ne fournit pas crypto.subtle. Utilise HTTPS et un navigateur à jour.",
     /* SAS */
     'sas-title': "Vérification de l'appareil",
     'sas-hint': "<strong>Compare ce code avec l'autre appareil</strong> (de vive voix, par appel, etc.). Ils doivent être <strong>identiques</strong>. Ne clique sur ✓ que si tu as vraiment vérifié.",
@@ -737,6 +739,8 @@ const I18N = {
     'share-text': 'P2P Transfer code: {code}\nOpen the app and tap "Receive".',
     'share-title': 'P2P Transfer',
     'lang-menu-label': 'Choose language',
+    'rate-limited': 'Signaling service overloaded (429). Switching to manual mode…',
+    'crypto-unavailable': 'Security verification (SAS) unavailable: this browser does not provide crypto.subtle. Use HTTPS and an up-to-date browser.',
     'sas-title': 'Device verification',
     'sas-hint': "<strong>Compare this code with the other device</strong> (in person, by call, etc.). They must be <strong>identical</strong>. Only click ✓ if you really checked.",
     'sas-confirm': '✓ They match',
@@ -835,6 +839,8 @@ const I18N = {
     'share-text': "Codice Trasferimento P2P: {code}\nApri l'app e tocca « Ricevi ».",
     'share-title': 'Trasferimento P2P',
     'lang-menu-label': 'Scegli la lingua',
+    'rate-limited': 'Servizio di segnalazione sovraccarico (429). Passaggio alla modalità manuale…',
+    'crypto-unavailable': 'Verifica di sicurezza (SAS) non disponibile: questo browser non fornisce crypto.subtle. Usa HTTPS e un browser aggiornato.',
     'sas-title': 'Verifica del dispositivo',
     'sas-hint': "<strong>Confronta questo codice con l'altro dispositivo</strong> (di persona, per telefono, ecc.). Devono essere <strong>identici</strong>. Clicca ✓ solo se hai verificato davvero.",
     'sas-confirm': '✓ Corrispondono',
@@ -933,6 +939,8 @@ const I18N = {
     'share-text': 'P2P Transfer kodu: {code}\nUygulamayı aç ve « Al » düğmesine bas.',
     'share-title': 'P2P Transfer',
     'lang-menu-label': 'Dil seç',
+    'rate-limited': 'Sinyal hizmeti aşırı yüklendi (429). Manuel moda geçiliyor…',
+    'crypto-unavailable': 'Güvenlik doğrulaması (SAS) kullanılamıyor: bu tarayıcı crypto.subtle sağlamıyor. HTTPS ve güncel bir tarayıcı kullan.',
     'sas-title': 'Cihaz doğrulama',
     'sas-hint': "<strong>Bu kodu diğer cihazla karşılaştır</strong> (yüz yüze, telefonla vb.). <strong>Aynı olmalılar</strong>. Yalnızca gerçekten kontrol ettiysen ✓ tıkla.",
     'sas-confirm': '✓ Aynılar',
@@ -1807,10 +1815,18 @@ function queueFiles(files){
 /* ============================================================
    9. Signalisation — sans HMAC (6 chiffres trop faibles)
    La sécurité est assurée par le SAS post-connexion.
+
+   → 429 Too Many Requests : ntfy.sh renvoie 429 quand le quota
+     par IP est dépassé (public Wi-Fi, VPN, opérateur avec NAT).
+     On respecte Retry-After et on retente avec backoff exponentiel.
+   → EventSource : on ferme explicitement la source sur erreur
+     répétée, sinon le navigateur reconnecte en boucle et aggrave
+     le 429 côté ntfy.
    ============================================================ */
 function subscribe(topic, onMsg, onFail){
   const src = new EventSource(NTFY + topic + '/sse');
   let errors = 0;
+  let closed = false;
   src.onopen = () => { errors = 0; };
   src.onmessage = ev => {
     try{
@@ -1819,12 +1835,56 @@ function subscribe(topic, onMsg, onFail){
       onMsg(JSON.parse(d.message));
     }catch(_){}
   };
-  src.onerror = () => { if (++errors >= 4 && onFail) onFail(); };
+  src.onerror = () => {
+    if (closed) return;
+    if (++errors >= 4) {
+      closed = true;
+      try { src.close(); } catch(_){}
+      if (onFail) onFail();
+    }
+  };
   return src;
 }
-async function publish(topic, payload){
-  const response = await fetch(NTFY + topic, { method: 'POST', body: JSON.stringify(payload) });
+
+async function publish(topic, payload, attempt){
+  attempt = attempt || 0;
+  let response;
+  try {
+    response = await fetch(NTFY + topic, { method: 'POST', body: JSON.stringify(payload) });
+  } catch (e) {
+    // Erreur réseau — backoff avant de réessayer
+    if (attempt < 3) {
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      return publish(topic, payload, attempt + 1);
+    }
+    throw e;
+  }
+  if (response.status === 429) {
+    if (attempt >= 3) throw new Error('429');
+    const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
+    await new Promise(r => setTimeout(r, retryAfter * 1000));
+    return publish(topic, payload, attempt + 1);
+  }
   if (!response.ok) throw new Error('Signalisation HTTP ' + response.status);
+}
+
+/* Bascule automatique en mode manuel si le serveur de signalisation
+   est saturé (429) ou injoignable. */
+async function fallbackToManualHost(sdp, reason){
+  if (mode === 'manual') return;
+  mode = 'manual';
+  const chk = $('#chk-manual');
+  if (chk) chk.checked = true;
+  if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
+  if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
+  if (es){ try { es.close(); } catch(_){} es = null; }
+  const info = $('#auto-pairing-info');
+  const manual = $('#host-manual');
+  if (info) info.hidden = true;
+  if (manual) manual.hidden = false;
+  try { $('#host-offer').value = await packSDP(sdp); } catch(_){}
+  setHostStatus(t(reason), 'err');
+  toast(t(reason));
 }
 
 /* ============================================================
@@ -1868,14 +1928,29 @@ async function startHost(){
         }catch(e){
           setHostStatus(t('answer-invalid'), 'err');
         }
-      }, () => setHostStatus(t('signal-error'), 'err'));
+      }, () => {
+        // SSE a échoué (probable 429 ou serveur injoignable)
+        if (!connectedOnce) {
+          if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
+          fallbackToManualHost(sdp, 'signal-error');
+        }
+      });
 
       const pub = async () => {
-        try { await publish(topic, { t: 'offer', sdp, ts: Date.now() }); }
-        catch(_) { setHostStatus(t('signal-error'), 'err'); }
+        try {
+          await publish(topic, { t: 'offer', sdp, ts: Date.now() });
+        } catch (e) {
+          if (e.message === '429') {
+            fallbackToManualHost(sdp, 'rate-limited');
+          } else {
+            setHostStatus(t('signal-error'), 'err');
+          }
+        }
       };
       pub();
-      offerTimer = setInterval(pub, 2500);
+      // Intervalle raisonnable : 6 s au lieu de 2,5 s pour ne pas
+      // saturer le quota ntfy (~50 POST / 5 min maxi).
+      offerTimer = setInterval(pub, 6000);
       setHostStatus(t('waiting-peer'), 'spin');
     }
   }catch(e){
@@ -2067,8 +2142,22 @@ async function onConnected(){
   const sas = await computeSAS();
   if (sasRejected) return;
   if (!sas){
-    toast(t('sas-error'));
+    const hasCrypto = !!(window.crypto && crypto.subtle && crypto.subtle.digest);
+    const msg = hasCrypto ? t('sas-error') : t('crypto-unavailable');
+    toast(msg);
     $('#btn-pick').disabled = true;
+    const sasCard = $('#sas-card');
+    if (sasCard) {
+      sasCard.hidden = false;
+      const codeEl = $('#sas-code');
+      if (codeEl) { codeEl.textContent = '⚠'; codeEl.classList.add('mismatch'); }
+      const statusEl = $('#sas-status');
+      if (statusEl) { statusEl.className = 'status err'; statusEl.textContent = msg; }
+      const confirmBtn = $('#btn-sas-confirm');
+      const rejectBtn  = $('#btn-sas-reject');
+      if (confirmBtn) confirmBtn.disabled = true;
+      if (rejectBtn)  rejectBtn.disabled  = true;
+    }
     return;
   }
   sasCode = sas;
@@ -2210,7 +2299,7 @@ function handleSasRejection(message){
   if (rejectBtn)  rejectBtn.disabled  = true;
 
   toast(message);
-  vibrate([50, 50, 50, 50, 50]);
+  vibrate([50, 100, 50, 100, 50]);
 
   // Fermer la connexion sans déclencher onFatal
   if (dc){ try { dc.close(); } catch(_){} dc = null; }
@@ -2612,7 +2701,10 @@ window.addEventListener('drop', e => {
    ============================================================ */
 updateMetaThemeColor();
 applyI18n();
-window.matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', updateMetaThemeColor);
+
+const mqLight = window.matchMedia('(prefers-color-scheme: light)');
+if (mqLight.addEventListener) mqLight.addEventListener('change', updateMetaThemeColor);
+else if (mqLight.addListener) mqLight.addListener(updateMetaThemeColor);
 
 if (!(window.crypto && crypto.subtle)){
   console.warn("crypto.subtle indisponible : vérification SAS désactivée.");

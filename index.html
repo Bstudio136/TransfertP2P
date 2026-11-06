@@ -24,17 +24,16 @@
   *,*::before,*::after{box-sizing:border-box}
   :root{
     color-scheme: dark;
-    /* --- THÈME SOMBRE "ONE LINK" --- */
-    --bg:#0a0a0a; 
+    --bg:#0a0a0a;
     --bg-grad:radial-gradient(ellipse at 50% -10%, #1c1c1c 0%, #0a0a0a 65%);
-    --card:#161616; 
-    --card2:#1c1c1c; 
-    --text:#f5f1e6; 
-    --muted:#a8a29a; 
+    --card:#161616;
+    --card2:#1c1c1c;
+    --text:#f5f1e6;
+    --muted:#a8a29a;
     --border:#2a2a2a;
-    --accent:#d4af37; 
-    --accent-hi:#f5c518; 
-    --accent-lo:#b8860b; 
+    --accent:#d4af37;
+    --accent-hi:#f5c518;
+    --accent-lo:#b8860b;
     --on-accent:#1a1200;
     --accent-soft:rgba(212, 175, 55, .12);
     --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
@@ -159,61 +158,31 @@
     50%{text-shadow:0 0 36px var(--accent), 0 0 60px var(--accent-soft);transform:scale(1.015)}
   }
 
-  /* =========================================
-     BOUTONS D'ACTION (COPIER / PARTAGER) PRO
-     ========================================= */
-  .code-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 16px;
-  }
+  .code-actions { display: flex; gap: 12px; margin-top: 16px; }
   .code-actions .btn {
-    flex: 1;
-    margin: 0;
-    min-height: 48px;
-    padding: 10px 16px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-radius: 12px;
+    flex: 1; margin: 0; min-height: 48px; padding: 10px 16px;
+    font-size: 0.9rem; font-weight: 600; border-radius: 12px;
     letter-spacing: 0.02em;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   }
-  .code-actions .btn:hover {
-    transform: translateY(-2px);
-  }
-  .code-actions .btn:active {
-    transform: translateY(0) scale(0.97);
-  }
-
-  /* Bouton "Copier" (Secondaire) */
+  .code-actions .btn:hover { transform: translateY(-2px); }
+  .code-actions .btn:active { transform: translateY(0) scale(0.97); }
   .code-actions .btn.ghost {
-    background: var(--card2);
-    border: 1px solid var(--border);
-    color: var(--text);
+    background: var(--card2); border: 1px solid var(--border); color: var(--text);
   }
   .code-actions .btn.ghost:hover {
-    background: var(--border);
-    border-color: var(--muted);
+    background: var(--border); border-color: var(--muted);
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   }
-
-  /* Bouton "Partager" (Primaire adouci) */
   .code-actions .btn.share-btn {
-    background: var(--accent-soft);
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    box-shadow: 0 4px 16px var(--accent-soft);
+    background: var(--accent-soft); border: 1px solid var(--accent);
+    color: var(--accent); box-shadow: 0 4px 16px var(--accent-soft);
   }
   .code-actions .btn.share-btn:hover {
-    background: var(--accent);
-    color: var(--on-accent);
-    border-color: var(--accent);
-    box-shadow: 0 6px 20px var(--accent-soft);
+    background: var(--accent); color: var(--on-accent);
+    border-color: var(--accent); box-shadow: 0 6px 20px var(--accent-soft);
   }
 
   label{display:block;font-size:.74rem;color:var(--muted);margin:16px 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
@@ -246,12 +215,8 @@
   .stats .sep{opacity:.4}
   .rtt-good{color:var(--ok)}.rtt-mid{color:var(--warn)}.rtt-bad{color:var(--err)}
 
-  /* ============ SAS CARD ============ */
   .sas-card{border-color:var(--accent);background:linear-gradient(180deg, var(--accent-soft) 0%, var(--card) 100%)}
-  .sas-label{
-    text-align:center;font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;
-    font-weight:700;color:var(--muted);margin-bottom:4px;
-  }
+  .sas-label{text-align:center;font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--muted);margin-bottom:4px;}
   .sas-code{
     font-family:ui-monospace,monospace;font-size:clamp(2.2rem, 9vw, 3.2rem);
     font-weight:800;letter-spacing:.3rem;text-align:center;padding:8px 0;
@@ -353,7 +318,6 @@
   .scanner-box{text-align:center;padding:12px;}
   .scanner-box video{max-height:50vh;object-fit:cover;}
 
-  /* ====== LOGO DANS LE HEADER ====== */
   #h1-title{display:flex;align-items:center;gap:10px}
   #h1-title .h1-logo{
     width:32px;height:32px;border-radius:8px;flex:none;object-fit:cover;
@@ -393,7 +357,6 @@
     </div>
   </div>
 
-  <!-- ===================== ACCUEIL ===================== -->
   <section class="view active" id="v-home" style="margin-top:20px">
     <button class="btn primary" id="btn-send">
       <span class="ico">📤</span>
@@ -422,7 +385,6 @@
     <p class="hint" id="hint-home" style="margin-top:16px" data-i18n-html="hint-auto"></p>
   </section>
 
-  <!-- ===================== HÔTE ===================== -->
   <section class="view" id="v-host">
     <div class="card">
       <div id="auto-pairing-info">
@@ -433,8 +395,7 @@
         Copie l'invitation ou scanne le QR code. Vérifie ensuite le code de sécurité.
       </p>
       <div id="qr-container" class="qr-container" hidden></div>
-      
-      <!-- Boutons améliorés -->
+
       <div class="code-actions">
         <button class="btn ghost" id="btn-copy-code" type="button">📋 <span data-i18n="copy">Copier</span></button>
         <button class="btn share-btn" id="btn-share-code" type="button">📤 <span data-i18n="share">Partager</span></button>
@@ -457,7 +418,6 @@
     <button class="btn ghost" id="btn-cancel-host" data-i18n="cancel">Annuler</button>
   </section>
 
-  <!-- ===================== REJOINDRE ===================== -->
   <section class="view" id="v-join">
     <div class="card" id="join-code-card">
       <label for="join-code" style="margin-top:0" data-i18n="join-label">Code à 6 chiffres</label>
@@ -490,7 +450,6 @@
     <button class="btn ghost" id="btn-cancel-join" data-i18n="back">Retour</button>
   </section>
 
-  <!-- ===================== SESSION ===================== -->
   <section class="view" id="v-main">
     <div class="card session-card">
       <div class="status" id="conn-status" role="status" aria-live="polite" style="margin:0">
@@ -503,7 +462,6 @@
       </div>
     </div>
 
-    <!-- SAS CARD -->
     <div class="card sas-card" id="sas-card" hidden>
       <div class="sas-label" data-i18n="sas-title">Vérification de l'appareil</div>
       <div class="sas-code" id="sas-code">······</div>
@@ -631,6 +589,7 @@ const I18N = {
     'answer-received': 'Réponse reçue, connexion en cours…',
     'answer-invalid': 'Réponse invalide, réessaie.',
     'signal-error': 'Serveur de signalisation injoignable — utilise le mode manuel.',
+    'rate-limited': 'Service de signalisation saturé (429). Passage automatique en mode manuel.',
     'error-prefix': 'Erreur',
     'footer-dev': 'Développé par',
     'decomp-unavailable': 'Ce navigateur ne sait pas décompresser. Utilise un navigateur plus récent.',
@@ -638,7 +597,6 @@ const I18N = {
     'share-text': "Code Transfert P2P : {code}\nOuvre l'app et appuie sur « Recevoir ».",
     'share-title': 'Transfert P2P',
     'lang-menu-label': 'Choisir la langue',
-    /* SAS */
     'sas-title': "Vérification de l'appareil",
     'sas-hint': "<strong>Compare ce code avec l'autre appareil</strong> (de vive voix, par appel, etc.). Ils doivent être <strong>identiques</strong>. Ne clique sur ✓ que si tu as vraiment vérifié.",
     'sas-confirm': '✓ Ils correspondent',
@@ -730,6 +688,7 @@ const I18N = {
     'answer-received': 'Answer received, connecting…',
     'answer-invalid': 'Invalid answer, try again.',
     'signal-error': 'Signaling server unreachable — use manual mode.',
+    'rate-limited': 'Signaling service overloaded (429). Switching automatically to manual mode.',
     'error-prefix': 'Error',
     'footer-dev': 'Developed by',
     'decomp-unavailable': 'This browser cannot decompress. Use a more recent browser.',
@@ -828,6 +787,7 @@ const I18N = {
     'answer-received': 'Risposta ricevuta, connessione in corso…',
     'answer-invalid': 'Risposta non valida, riprova.',
     'signal-error': 'Server di segnalazione irraggiungibile — usa la modalità manuale.',
+    'rate-limited': 'Servizio di segnalazione sovraccarico (429). Passaggio automatico alla modalità manuale.',
     'error-prefix': 'Errore',
     'footer-dev': 'Sviluppato da',
     'decomp-unavailable': 'Questo browser non sa decomprimere. Usa un browser più recente.',
@@ -926,6 +886,7 @@ const I18N = {
     'answer-received': 'Yanıt alındı, bağlanıyor…',
     'answer-invalid': 'Geçersiz yanıt, tekrar dene.',
     'signal-error': 'Sinyal sunucusuna ulaşılamıyor — manuel modu kullan.',
+    'rate-limited': 'Sinyal hizmeti aşırı yüklendi (429). Otomatik olarak manuel moda geçiliyor.',
     'error-prefix': 'Hata',
     'footer-dev': 'Geliştiren:',
     'decomp-unavailable': 'Bu tarayıcı açmayı bilmiyor. Daha yeni bir tarayıcı kullan.',
@@ -1002,7 +963,6 @@ function applyI18n(){
     if (v !== undefined) el.placeholder = v;
   });
 
-  // Titre avec logo intégré
   const h1 = $('#h1-title');
   if (h1) {
     h1.innerHTML =
@@ -1146,7 +1106,6 @@ function makePairingCode(){
   if (!window.crypto || typeof crypto.getRandomValues !== 'function'){
     throw new Error(t('crypto-required'));
   }
-  // Distribution uniforme sur [0, 999999]
   const buf = new Uint32Array(1);
   const limit = Math.floor(0x100000000 / 1000000) * 1000000;
   let n;
@@ -1164,10 +1123,7 @@ function normalizePairingCode(raw){
   return (raw || '').replace(/\D/g, '').slice(0, 6);
 }
 
-/* ============ SAS : Short Authentication String ============
-   Comparaison des empreintes DTLS locales et distantes.
-   Si un attaquant MITM, ses empreintes diffèrent côté pair
-   → les SAS diffèrent → détection visuelle par les utilisateurs. */
+/* ============ SAS ============ */
 function extractFingerprint(sdp){
   if (!sdp) return '';
   const m = sdp.match(/a=fingerprint:sha-256 ([0-9A-Fa-f:]+)/);
@@ -1251,7 +1207,6 @@ function clearFileListUI(opts){
     st.ui = null;
   });
   if (opts.wipeStore){
-    // Libération mémoire complète (chunks + blobs + mapping nid→key)
     store.forEach(st => { st.chunks = []; st.blob = null; st.bytes = 0; });
     store.clear();
     nidMap.clear();
@@ -1337,7 +1292,7 @@ async function hashBlobWorker(blob, onProgress) {
 }
 
 /* ============================================================
-   3. Config réseau — 6 chiffres
+   3. Config réseau
    ============================================================ */
 const ICE_CONFIG = {
   iceServers: [
@@ -1350,8 +1305,8 @@ const NTFY = 'https://ntfy.sh/';
 const TOPIC_PREFIX = 'ftx7q-';
 const PAIRING_TTL = 5 * 60 * 1000; // 5 min
 
-// ⚠️ Fréquences réduites pour éviter de spammer ntfy.sh (429)
-const OFFER_INTERVAL = 15 * 1000;  // republier l'offre toutes les 15 s (au lieu de 2.5 s)
+// Fréquences réduites pour éviter de spammer ntfy.sh (429)
+const OFFER_INTERVAL = 15 * 1000;  // republier l'offre toutes les 15 s
 
 /* ============================================================
    4. État global
@@ -1382,7 +1337,8 @@ let sessionTimer = null, sessionStartTime = 0;
 let pairingTimer = null;
 let pingTimer = null, currentRtt = null;
 
-/* --- SAS --- */
+let connectedOnce = false;
+
 let sasCode = '';
 let sasSelfConfirmed = false;
 let sasPeerConfirmed = false;
@@ -1808,15 +1764,18 @@ function queueFiles(files){
 }
 
 /* ============================================================
-   9. Signalisation
-   La sécurité est assurée par le SAS post-connexion.
+   9. Signalisation ntfy.sh
 
-   → Pour limiter les requêtes vers ntfy.sh :
-     • offer republiée toutes les OFFER_INTERVAL (15 s) au lieu de 2.5 s
-     • answer publiée 1 seule fois (avec 1 retry si échec réseau)
-     • EventSource fermé après 4 erreurs pour éviter la boucle
-       de reconnexion automatique du navigateur (qui spamme)
-     • Retry-After respecté en cas de 429
+   Réduction du nombre de requêtes :
+     • offre republiée toutes les OFFER_INTERVAL (15 s) au lieu de 2.5 s
+     • réponse publiée 1 seule fois (avec 1 retry si échec réseau)
+     • EventSource fermé après 4 erreurs successives pour couper
+       la boucle de reconnexion automatique du navigateur
+     • respect de Retry-After en cas de 429
+
+   Fallback automatique vers le mode manuel :
+     • sur 429 lors de la première publication de l'offre
+     • sur échec répété du flux SSE (serveur injoignable)
    ============================================================ */
 function subscribe(topic, onMsg, onFail){
   const src = new EventSource(NTFY + topic + '/sse');
@@ -1854,12 +1813,41 @@ async function publish(topic, payload, attempt){
     throw e;
   }
   if (response.status === 429) {
-    if (attempt >= 2) throw new Error('Signalisation HTTP 429');
+    if (attempt >= 2) throw new Error('429');
     const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
     return publish(topic, payload, attempt + 1);
   }
   if (!response.ok) throw new Error('Signalisation HTTP ' + response.status);
+}
+
+/* Bascule automatique en mode manuel : on cache la section auto,
+   on affiche le textarea avec l'offre packée prête à copier-coller,
+   et on arrête la signalisation (setInterval + EventSource). */
+async function fallbackToManualHost(sdp, reason){
+  if (mode === 'manual') return;
+  if (connectedOnce) return;
+  mode = 'manual';
+
+  if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
+  if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
+  if (es){ try { es.close(); } catch(_){} es = null; }
+
+  const chk = $('#chk-manual');
+  if (chk) chk.checked = true;
+
+  const info = $('#auto-pairing-info');
+  const manual = $('#host-manual');
+  if (info) info.hidden = true;
+  if (manual) manual.hidden = false;
+
+  if (sdp){
+    try { $('#host-offer').value = await packSDP(sdp); }
+    catch(_){}
+  }
+
+  setHostStatus(t(reason), 'err');
+  toast(t(reason));
 }
 
 /* ============================================================
@@ -1884,39 +1872,64 @@ async function startHost(){
   generateQR(pairingCode);
   if (mode !== 'manual') pairingTimer = setTimeout(expirePairing, PAIRING_TTL);
 
-  try{
-    const sdp = await createOfferSDP();
-
-    if (mode === 'manual'){
-      $('#host-offer').value = await packSDP(sdp);
-      setHostStatus(t('manual-step-2-host'), '');
-    }else{
-      const topic = TOPIC_PREFIX + pairingCode;
-      es = subscribe(topic, async msg => {
-        if (msg.t !== 'answer') return;
-        if (!Number.isFinite(msg.ts) || Math.abs(Date.now() - msg.ts) > PAIRING_TTL) return;
-        if (!pc || pc.signalingState !== 'have-local-offer') return;
-        clearInterval(offerTimer); offerTimer = null;
-        try{
-          await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
-          setHostStatus(t('answer-received'), 'spin');
-        }catch(e){
-          setHostStatus(t('answer-invalid'), 'err');
-        }
-      }, () => setHostStatus(t('signal-error'), 'err'));
-
-      const pub = async () => {
-        try { await publish(topic, { t: 'offer', sdp, ts: Date.now() }); }
-        catch(_) { setHostStatus(t('signal-error'), 'err'); }
-      };
-      pub();
-      // ↓ Intervalle porté à 15 s : ~20 POST maxi sur 5 min au lieu de ~120
-      offerTimer = setInterval(pub, OFFER_INTERVAL);
-      setHostStatus(t('waiting-peer'), 'spin');
-    }
-  }catch(e){
+  let sdp;
+  try {
+    sdp = await createOfferSDP();
+  } catch(e){
     setHostStatus(t('error-prefix') + ' : ' + e.message, 'err');
+    return;
   }
+
+  if (mode === 'manual'){
+    try { $('#host-offer').value = await packSDP(sdp); } catch(_){}
+    setHostStatus(t('manual-step-2-host'), '');
+    return;
+  }
+
+  // --- Mode auto (ntfy) ---
+  const topic = TOPIC_PREFIX + pairingCode;
+  let fallbackDone = false;
+
+  const doFallback = async (reason) => {
+    if (fallbackDone) return;
+    fallbackDone = true;
+    await fallbackToManualHost(sdp, reason);
+  };
+
+  // 1) SSE : si le flux casse 4 fois, le serveur est inutilisable → manuel
+  es = subscribe(topic, async msg => {
+    if (msg.t !== 'answer') return;
+    if (!Number.isFinite(msg.ts) || Math.abs(Date.now() - msg.ts) > PAIRING_TTL) return;
+    if (!pc || pc.signalingState !== 'have-local-offer') return;
+    if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
+    try{
+      await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
+      setHostStatus(t('answer-received'), 'spin');
+    }catch(e){
+      setHostStatus(t('answer-invalid'), 'err');
+    }
+  }, () => { doFallback('signal-error'); });
+
+  // 2) Publication de l'offre : fallback sur 429 (et sur 1er échec)
+  const pub = async (isInitial) => {
+    if (fallbackDone) return;
+    try {
+      await publish(topic, { t: 'offer', sdp, ts: Date.now() });
+    } catch (e) {
+      const isRateLimit = String(e.message).indexOf('429') !== -1;
+      if (isInitial || isRateLimit){
+        doFallback(isRateLimit ? 'rate-limited' : 'signal-error');
+      } else {
+        setHostStatus(t('signal-error'), 'err');
+      }
+    }
+  };
+
+  await pub(true);
+  if (fallbackDone) return;
+
+  offerTimer = setInterval(() => pub(false), OFFER_INTERVAL);
+  setHostStatus(t('waiting-peer'), 'spin');
 }
 
 function setHostStatus(text, kind){
@@ -1998,16 +2011,17 @@ async function joinWithCode(){
 
     try{
       const answerSdp = await createAnswerSDP(msg.sdp);
-      // ↓ Envoi unique (au lieu de 3x) avec 1 retry en cas d'échec réseau
+      // Envoi unique avec 1 retry réseau
       try {
         await publish(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() });
       } catch(e){
         try {
           await new Promise(r => setTimeout(r, 2000));
           await publish(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() });
-        } catch(e2) {
+        } catch(e2){
+          const isRateLimit = String(e2.message).indexOf('429') !== -1;
           st.className = 'status err';
-          st.textContent = t('signal-error');
+          st.textContent = isRateLimit ? t('rate-limited') : t('signal-error');
         }
       }
       if (es) { es.close(); es = null; }
@@ -2070,8 +2084,6 @@ async function manualJoinGenerate(){
 /* ============================================================
    13. États de connexion + SAS
    ============================================================ */
-let connectedOnce = false;
-
 async function onConnected(){
   if (connectedOnce) return;
   connectedOnce = true;
@@ -2101,7 +2113,6 @@ async function onConnected(){
 
   showView('v-main');
 
-  // --- SAS ---
   sasSelfConfirmed = false;
   sasPeerConfirmed = false;
   sasVerified = false;
@@ -2132,7 +2143,6 @@ function updateSasUI(){
   const rejectBtn  = $('#btn-sas-reject');
   const codeEl     = $('#sas-code');
 
-  // Bouton ✓
   if (sasSelfConfirmed){
     confirmBtn.disabled = true;
     confirmBtn.textContent = '✓';
@@ -2141,7 +2151,6 @@ function updateSasUI(){
     confirmBtn.textContent = t('sas-confirm');
   }
 
-  // Bouton ✗
   rejectBtn.disabled = sasRejected;
 
   if (sasRejected){
@@ -2206,7 +2215,6 @@ function checkSasVerified(){
   if (sasSelfConfirmed && sasPeerConfirmed && !sasVerified){
     sasVerified = true;
     $('#btn-pick').disabled = false;
-    // Mettre à jour le statut global
     const cs = $('#conn-status');
     if (cs){
       cs.className = 'status ok';
@@ -2218,8 +2226,6 @@ function checkSasVerified(){
     updateSasUI();
     toast(t('sas-verified-toast'));
     vibrate(30);
-    
-    // Cacher la carte SAS IMMÉDIATEMENT
     const card = $('#sas-card');
     if (card) card.hidden = true;
   }
@@ -2228,11 +2234,8 @@ function checkSasVerified(){
 function handleSasRejection(message){
   sasRejected = true;
   $('#btn-pick').disabled = true;
-
-  // Purge les fichiers d'une session rejetée (peut être un MITM)
   clearFileListUI({ wipeStore: true });
 
-  // UI
   const codeEl = $('#sas-code');
   if (codeEl) codeEl.classList.add('mismatch');
   const statusEl = $('#sas-status');
@@ -2254,15 +2257,14 @@ function handleSasRejection(message){
   if (rejectBtn)  rejectBtn.disabled  = true;
 
   toast(message);
-  vibrate([50, 50, 50, 50, 50]);
+  vibrate([50, 100, 50, 100, 50]);
 
-  // Fermer la connexion sans déclencher onFatal
   if (dc){ try { dc.close(); } catch(_){} dc = null; }
   if (pc){ try { pc.close(); } catch(_){} pc = null; }
 }
 
 function onFatal(message){
-  if (sasRejected) return; // déjà géré
+  if (sasRejected) return;
 
   if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
@@ -2299,7 +2301,6 @@ function cleanup(){
   queue = [];
   busy = false;
 
-  // SAS
   sasCode = '';
   sasSelfConfirmed = false;
   sasPeerConfirmed = false;
@@ -2337,7 +2338,6 @@ function startPing(){
     if (!dc || dc.readyState !== 'open') return;
     try { dc.send(JSON.stringify({ t: 'ping', ts: performance.now() })); } catch(e){}
   };
-  // Attendre 1 seconde pour être sûr que le canal est prêt
   setTimeout(() => {
     sendPing();
     pingTimer = setInterval(sendPing, 5000);
@@ -2514,7 +2514,6 @@ $('#btn-copy-answer').onclick  = () => copyField($('#join-answer-out')).then(() 
 $('#btn-host-connect').onclick = manualHostConnect;
 $('#btn-join-gen').onclick     = manualJoinGenerate;
 
-/* SAS buttons */
 $('#btn-sas-confirm').onclick = onSasSelfConfirm;
 $('#btn-sas-reject').onclick  = onSasSelfReject;
 

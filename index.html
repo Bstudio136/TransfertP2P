@@ -19,6 +19,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<!-- Ajout de la bibliothèque MQTT pour remplacer ntfy.sh -->
+<script src="https://unpkg.com/mqtt@5.3.5/dist/mqtt.min.js"></script>
 
 <style>
   *,*::before,*::after{box-sizing:border-box}
@@ -545,7 +547,7 @@ const I18N = {
     'receive-title': 'Recevoir des fichiers', 'receive-sub': "Saisis le code de l'autre téléphone",
     'manual-mode': 'Mode manuel', 'manual-suffix': '(sans serveur de signalisation)',
     'manual-desc': "Pas de serveur de signalisation ; échange manuel de l'offre et de la réponse WebRTC.",
-    'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique transmet à ntfy.sh les informations temporaires nécessaires à WebRTC. Le code à 6 chiffres expire après 5 minutes. <strong>Après connexion, un code de sécurité (SAS) est affiché sur les deux appareils : compare-les pour détecter une éventuelle interception.</strong>",
+    'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique utilise un serveur MQTT public pour les informations temporaires nécessaires à WebRTC. Le code à 6 chiffres expire après 5 minutes. <strong>Après connexion, un code de sécurité (SAS) est affiché sur les deux appareils : compare-les pour détecter une éventuelle interception.</strong>",
     'hint-manual': "<strong>Mode manuel :</strong> aucun serveur de signalisation n'est utilisé. Tu devras échanger deux codes par copier-coller (SMS, messagerie…) ou en scannant les QR codes affichés. Le transfert des fichiers reste identique et pair-à-pair.",
     'pairing-code-label': "Code d'invitation",
     'pairing-code-hint': "Copie le code ou scanne le QR. Vérifie ensuite le code de sécurité affiché sur les deux appareils.",
@@ -612,7 +614,7 @@ const I18N = {
     'answer-received': 'Réponse reçue, connexion en cours…',
     'answer-invalid': 'Réponse invalide, réessaie.',
     'signal-error': 'Serveur de signalisation injoignable — utilise le mode manuel.',
-    'rate-limited': 'Service de signalisation saturé (429). Passage automatique en mode manuel.',
+    'rate-limited': 'Service de signalisation saturé. Passage automatique en mode manuel.',
     'error-prefix': 'Erreur',
     'footer-dev': 'Développé par',
     'decomp-unavailable': 'Ce navigateur ne sait pas décompresser. Utilise un navigateur plus récent.',
@@ -634,11 +636,9 @@ const I18N = {
     'sas-error': 'Impossible de calculer le code de vérification.',
     'sas-first': "Vérifie d'abord l'appareil.",
     'sas-mismatch': '⚠ Les codes de vérification ne correspondent pas.',
-    /* ===== AJOUT QR MANUEL ===== */
     'scan-answer-qr': 'Scanner la réponse QR',
     'scan-offer-qr': "Scanner le QR de l'offre",
     'qr-too-big': 'QR trop volumineux — utilise le copier-coller'
-    /* ===== FIN AJOUT ===== */
   },
   en: {
     'page-title': 'P2P Transfer — file sending between phones',
@@ -649,7 +649,7 @@ const I18N = {
     'receive-title': 'Receive files', 'receive-sub': "Enter the other phone's code",
     'manual-mode': 'Manual mode', 'manual-suffix': '(no signaling server)',
     'manual-desc': 'No signaling service; manually exchange the WebRTC offer and answer.',
-    'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing sends temporary WebRTC connection details through ntfy.sh. The 6-digit code expires after 5 minutes. <strong>After connecting, a security code (SAS) is shown on both devices: compare them to detect interception.</strong>",
+    'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing uses a public MQTT server for temporary WebRTC connection details. The 6-digit code expires after 5 minutes. <strong>After connecting, a security code (SAS) is shown on both devices: compare them to detect interception.</strong>",
     'hint-manual': "<strong>Manual mode:</strong> no signaling server is used. You will have to exchange two codes via copy/paste (SMS, messaging…) or by scanning the displayed QR codes. File transfer remains identical and peer-to-peer.",
     'pairing-code-label': 'Temporary invitation',
     'pairing-code-hint': 'Copy the code or scan its QR. Then verify the security code on both devices.',
@@ -716,7 +716,7 @@ const I18N = {
     'answer-received': 'Answer received, connecting…',
     'answer-invalid': 'Invalid answer, try again.',
     'signal-error': 'Signaling server unreachable — use manual mode.',
-    'rate-limited': 'Signaling service overloaded (429). Switching automatically to manual mode.',
+    'rate-limited': 'Signaling service overloaded. Switching automatically to manual mode.',
     'error-prefix': 'Error',
     'footer-dev': 'Developed by',
     'decomp-unavailable': 'This browser cannot decompress. Use a more recent browser.',
@@ -738,11 +738,9 @@ const I18N = {
     'sas-error': 'Could not compute verification code.',
     'sas-first': 'Verify the device first.',
     'sas-mismatch': '⚠ Verification codes do not match.',
-    /* ===== AJOUT QR MANUEL ===== */
     'scan-answer-qr': 'Scan the answer QR',
     'scan-offer-qr': 'Scan the offer QR',
     'qr-too-big': 'QR too big — use copy-paste'
-    /* ===== FIN AJOUT ===== */
   },
   it: {
     'page-title': 'Trasferimento P2P — invio di file tra telefoni',
@@ -820,7 +818,7 @@ const I18N = {
     'answer-received': 'Risposta ricevuta, connessione in corso…',
     'answer-invalid': 'Risposta non valida, riprova.',
     'signal-error': 'Server di segnalazione irraggiungibile — usa la modalità manuale.',
-    'rate-limited': 'Servizio di segnalazione sovraccarico (429). Passaggio automatico alla modalità manuale.',
+    'rate-limited': 'Servizio di segnalazione sovraccarico. Passaggio automatico alla modalità manuale.',
     'error-prefix': 'Errore',
     'footer-dev': 'Sviluppato da',
     'decomp-unavailable': 'Questo browser non sa decomprimere. Usa un browser più recente.',
@@ -842,11 +840,9 @@ const I18N = {
     'sas-error': 'Impossibile calcolare il codice di verifica.',
     'sas-first': 'Verifica prima il dispositivo.',
     'sas-mismatch': '⚠ I codici di verifica non corrispondono.',
-    /* ===== AJOUT QR MANUEL ===== */
     'scan-answer-qr': 'Scansiona il QR della risposta',
     'scan-offer-qr': "Scansiona il QR dell'offerta",
     'qr-too-big': 'QR troppo grande — usa copia-incolla'
-    /* ===== FIN AJOUT ===== */
   },
   tr: {
     'page-title': 'P2P Transfer — telefonlar arası dosya gönderimi',
@@ -924,7 +920,7 @@ const I18N = {
     'answer-received': 'Yanıt alındı, bağlanıyor…',
     'answer-invalid': 'Geçersiz yanıt, tekrar dene.',
     'signal-error': 'Sinyal sunucusuna ulaşılamıyor — manuel modu kullan.',
-    'rate-limited': 'Sinyal hizmeti aşırı yüklendi (429). Otomatik olarak manuel moda geçiliyor.',
+    'rate-limited': 'Sinyal hizmeti aşırı yüklendi. Otomatik olarak manuel moda geçiliyor.',
     'error-prefix': 'Hata',
     'footer-dev': 'Geliştiren:',
     'decomp-unavailable': 'Bu tarayıcı açmayı bilmiyor. Daha yeni bir tarayıcı kullan.',
@@ -946,11 +942,9 @@ const I18N = {
     'sas-error': 'Doğrulama kodu hesaplanamadı.',
     'sas-first': 'Önce cihazı doğrula.',
     'sas-mismatch': '⚠ Doğrulama kodları eşleşmiyor.',
-    /* ===== AJOUT QR MANUEL ===== */
     'scan-answer-qr': 'Yanıt QR kodunu tara',
     'scan-offer-qr': 'Teklif QR kodunu tara',
     'qr-too-big': 'QR çok büyük — kopyala-yapıştır kullan'
-    /* ===== FIN AJOUT ===== */
   }
 };
 
@@ -1365,11 +1359,8 @@ const ICE_CONFIG = {
     { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
   ]
 };
-const NTFY = 'https://ntfy.sh/';
 const TOPIC_PREFIX = 'ftx7q-';
 const PAIRING_TTL = 15 * 60 * 1000; // 15 min
-
-const OFFER_INTERVAL = 15 * 1000const OFFER_INTERVAL = 30 * 1000; // 30 secondes;
 
 /* ============================================================
    4. État global
@@ -1378,12 +1369,12 @@ const CHUNK = 16 * 1024;
 const HIGH_WATER = 8 * 1024 * 1024;
 const LOW_WATER  = 1 * 1024 * 1024;
 
-let pc = null, dc = null, es = null;
-let mode = 'ntfy';
+let pc = null, dc = null;
+let mqttClient = null; // Remplace EventSource (es)
+let mode = 'auto'; // 'auto' (MQTT) ou 'manual'
 let role = null;
 let pairingCode = '';
 let sessionStart = 0;
-let offerTimer = null;
 let joinedOnce = false;
 let nidSeq = 0;
 
@@ -1827,59 +1818,43 @@ function queueFiles(files){
 }
 
 /* ============================================================
-   9. Signalisation ntfy.sh
+   9. Signalisation via MQTT (Remplace ntfy.sh)
    ============================================================ */
-function subscribe(topic, onMsg, onFail){
-  const src = new EventSource(NTFY + topic + '/sse');
-  let errors = 0;
-  let closed = false;
-  src.onopen = () => { errors = 0; };
-  src.onmessage = ev => {
-    try{
-      const d = JSON.parse(ev.data);
-      if (d.event !== 'message') return;
-      onMsg(JSON.parse(d.message));
-    }catch(_){}
-  };
-  src.onerror = () => {
-    if (closed) return;
-    if (++errors >= 8) {
-      closed = true;
-      try { src.close(); } catch(_){}
-      if (onFail) onFail();
-    }
-  };
-  return src;
+function connectMQTT(topic, onMsg, onFail) {
+  if (mqttClient) mqttClient.end(true);
+  
+  // Utilisation d'un broker public gratuit et fiable
+  mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+
+  mqttClient.on('connect', () => {
+    mqttClient.subscribe(topic, { qos: 1 }, (err) => {
+      if (err && onFail) onFail(t('signal-error'));
+    });
+  });
+
+  mqttClient.on('message', (t, message) => {
+    try {
+      const msg = JSON.parse(message.toString());
+      onMsg(msg);
+    } catch(_) {}
+  });
+
+  mqttClient.on('error', (err) => {
+    console.error('MQTT Error:', err);
+    // Ne pas appeler onFail immédiatement, mqtt.js va tenter de se reconnecter
+  });
 }
 
-async function publish(topic, payload, attempt){
-  attempt = attempt || 0;
-  let response;
-  try {
-    response = await fetch(NTFY + topic, { method: 'POST', body: JSON.stringify(payload) });
-  } catch (e) {
-    if (attempt < 2) {
-      await new Promise(r => setTimeout(r, 2000));
-      return publish(topic, payload, attempt + 1);
+function publishMQTT(topic, payload) {
+  return new Promise((resolve, reject) => {
+    if (!mqttClient || !mqttClient.connected) {
+      return reject(new Error('MQTT non connecté'));
     }
-    throw e;
-  }
-  if (response.status === 429) {
-    if (attempt >= 4) {
-        throw new Error('429');
-    }
-    // 1. On lit l'en-tête Retry-After, sinon on utilise un délai de base.
-    let retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
-    // 2. On ajoute un backoff exponentiel pour ne pas marteler le serveur.
-    const backoffDelay = Math.min(Math.pow(2, attempt) * 1000, 60000); // Max 60 secondes
-    // 3. On attend le plus long des deux délais.
-    const delay = Math.max(retryAfter * 1000, backoffDelay);
-
-    console.warn(`Rate limit atteint (429). Nouvelle tentative dans ${delay / 1000} secondes.`);
-    await new Promise(r => setTimeout(r, delay));
-    return publish(topic, payload, attempt + 1);
-}
-  if (!response.ok) throw new Error('Signalisation HTTP ' + response.status);
+    mqttClient.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
 }
 
 async function fallbackToManualHost(sdp, reason){
@@ -1887,9 +1862,8 @@ async function fallbackToManualHost(sdp, reason){
   if (connectedOnce) return;
   mode = 'manual';
 
-  if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (es){ try { es.close(); } catch(_){} es = null; }
+  if (mqttClient){ mqttClient.end(true); mqttClient = null; }
 
   const chk = $('#chk-manual');
   if (chk) chk.checked = true;
@@ -1929,10 +1903,8 @@ async function startHost(){
   $('#host-manual').hidden = (mode !== 'manual');
   $('#host-offer').value = '';
   $('#host-answer-in').value = '';
-  /* ===== AJOUT QR MANUEL : reset du QR d'offre ===== */
   const hostOfferQr = $('#host-offer-qr');
   if (hostOfferQr){ hostOfferQr.innerHTML = ''; hostOfferQr.hidden = true; }
-  /* ===== FIN AJOUT ===== */
   clearFileListUI();
   setHostStatus(t('preparing'), 'spin');
   showView('v-host');
@@ -1949,19 +1921,17 @@ async function startHost(){
   }
 
   if (mode === 'manual'){
-    /* ===== AJOUT QR MANUEL : génération du QR d'offre ===== */
     try {
       const packed = await packSDP(sdp);
       $('#host-offer').value = packed;
       const ok = renderQrPayload($('#host-offer-qr'), packed);
       if (!ok) toast(t('qr-too-big'));
     } catch(_){}
-    /* ===== FIN AJOUT ===== */
     setHostStatus(t('manual-step-2-host'), '');
     return;
   }
 
-  // --- Mode auto (ntfy) ---
+  // --- Mode auto (MQTT) ---
   const topic = TOPIC_PREFIX + pairingCode;
   let fallbackDone = false;
 
@@ -1971,11 +1941,10 @@ async function startHost(){
     await fallbackToManualHost(sdp, reason);
   };
 
-  es = subscribe(topic, async msg => {
+  connectMQTT(topic, async msg => {
     if (msg.t !== 'answer') return;
     if (!Number.isFinite(msg.ts) || Math.abs(Date.now() - msg.ts) > PAIRING_TTL) return;
     if (!pc || pc.signalingState !== 'have-local-offer') return;
-    if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
     try{
       await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
       setHostStatus(t('answer-received'), 'spin');
@@ -1987,20 +1956,20 @@ async function startHost(){
   const pub = async (isInitial) => {
     if (fallbackDone) return;
     try {
-      await publish(topic, { t: 'offer', sdp, ts: Date.now() });
+      await publishMQTT(topic, { t: 'offer', sdp, ts: Date.now() });
     } catch (e) {
-      const isRateLimit = String(e.message).indexOf('429') !== -1;
-      if (isInitial || isRateLimit){
-        doFallback(isRateLimit ? 'rate-limited' : 'signal-error');
+      // Si on n'arrive pas à publier dès le début, on bascule en manuel
+      if (isInitial) {
+        doFallback('signal-error');
       } else {
         setHostStatus(t('signal-error'), 'err');
       }
     }
   };
 
+  // On envoie l'offre UNE SEULE FOIS (MQTT gère la transmission)
   await pub(true);
   if (fallbackDone) return;
-  // On ne fait plus de setInterval, on attend simplement la réponse.
   setHostStatus(t('waiting-peer'), 'spin');
 }
 
@@ -2014,8 +1983,7 @@ function setHostStatus(text, kind){
 function expirePairing(){
   pairingTimer = null;
   if (connectedOnce) return;
-  if (offerTimer) { clearInterval(offerTimer); offerTimer = null; }
-  if (es) { try { es.close(); } catch(_){} es = null; }
+  if (mqttClient) { mqttClient.end(true); mqttClient = null; }
   if (role === 'host') setHostStatus(t('code-expired'), 'err');
   if (role === 'join'){
     const st = $('#join-status');
@@ -2067,12 +2035,12 @@ async function joinWithCode(){
   const topic = TOPIC_PREFIX + code;
   pairingTimer = setTimeout(() => {
     if (role !== 'join' || connectedOnce) return;
-    if (es) { es.close(); es = null; }
+    if (mqttClient) { mqttClient.end(true); mqttClient = null; }
     st.className = 'status err';
     st.textContent = t('code-expired');
   }, PAIRING_TTL);
 
-  es = subscribe(topic, async msg => {
+  connectMQTT(topic, async msg => {
     if (msg.t !== 'offer') return;
     if (joinedOnce) return;
     if (!Number.isFinite(msg.ts) || Math.abs(Date.now() - msg.ts) > PAIRING_TTL) return;
@@ -2084,18 +2052,17 @@ async function joinWithCode(){
     try{
       const answerSdp = await createAnswerSDP(msg.sdp);
       try {
-        await publish(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() });
+        await publishMQTT(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() });
       } catch(e){
         try {
           await new Promise(r => setTimeout(r, 2000));
-          await publish(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() });
+          await publishMQTT(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() });
         } catch(e2){
-          const isRateLimit = String(e2.message).indexOf('429') !== -1;
           st.className = 'status err';
-          st.textContent = isRateLimit ? t('rate-limited') : t('signal-error');
+          st.textContent = t('signal-error');
         }
       }
-      if (es) { es.close(); es = null; }
+      if (mqttClient) { mqttClient.end(true); mqttClient = null; }
       st.innerHTML = '<span class="spinner"></span><span></span>';
       st.lastChild.textContent = t('connecting');
     }catch(e){
@@ -2112,7 +2079,7 @@ function checkDeepLink(){
   const hash = location.hash;
   const m = hash.match(/#join=(\d{6})/);
   if (!m) return;
-  mode = 'ntfy';
+  mode = 'auto';
   $('#chk-manual').checked = false;
   $('#join-code-card').hidden = false;
   $('#join-manual').hidden = true;
@@ -2141,12 +2108,10 @@ async function manualJoinGenerate(){
   try{
     const offerSdp = await unpackSDP(raw);
     const answerSdp = await createAnswerSDP(offerSdp);
-    /* ===== AJOUT QR MANUEL : QR de la réponse ===== */
     const packed = await packSDP(answerSdp);
     $('#join-answer-out').value = packed;
     const ok = renderQrPayload($('#join-answer-qr'), packed);
     if (!ok) toast(t('qr-too-big'));
-    /* ===== FIN AJOUT ===== */
     $('#join-answer-box').hidden = false;
     $('#join-status').hidden = false;
     $('#join-status').className = 'status';
@@ -2164,9 +2129,8 @@ async function onConnected(){
   if (connectedOnce) return;
   connectedOnce = true;
 
-  if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (es){ es.close(); es = null; }
+  if (mqttClient){ mqttClient.end(true); mqttClient = null; }
 
   statePromise = new Promise(resolve => {
     stateResolve = resolve;
@@ -2342,9 +2306,8 @@ function handleSasRejection(message){
 function onFatal(message){
   if (sasRejected) return;
 
-  if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (es){ es.close(); es = null; }
+  if (mqttClient){ mqttClient.end(true); mqttClient = null; }
   stopPing(); stopSessionTimer();
 
   const cs = $('#conn-status');
@@ -2359,9 +2322,8 @@ function onFatal(message){
 }
 
 function cleanup(){
-  if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (es){ try { es.close(); } catch(e){} es = null; }
+  if (mqttClient){ try { mqttClient.end(true); } catch(e){} mqttClient = null; }
   if (dc){ const d = dc; dc = null; try { d.close(); } catch(e){} }
   if (pc){ const p = pc; pc = null; try { p.close(); } catch(e){} }
   stopQRScanner();
@@ -2398,12 +2360,10 @@ function cleanup(){
   const stats = $('#stats');
   if (stats) stats.hidden = true;
 
-  /* ===== AJOUT QR MANUEL : reset des QR manuels ===== */
   const hostOfferQr = $('#host-offer-qr');
   if (hostOfferQr){ hostOfferQr.innerHTML = ''; hostOfferQr.hidden = true; }
   const joinAnswerQr = $('#join-answer-qr');
   if (joinAnswerQr){ joinAnswerQr.innerHTML = ''; joinAnswerQr.hidden = true; }
-  /* ===== FIN AJOUT ===== */
 }
 
 function goHome(){
@@ -2528,7 +2488,7 @@ document.addEventListener('pointerdown', e => {
 });
 
 $('#chk-manual').onchange = e => {
-  mode = e.target.checked ? 'manual' : 'ntfy';
+  mode = e.target.checked ? 'manual' : 'auto';
   $('#hint-home').innerHTML = t(mode === 'manual' ? 'hint-manual' : 'hint-auto');
 };
 
@@ -2541,10 +2501,8 @@ $('#btn-receive').onclick = () => {
   $('#join-answer-box').hidden = true;
   $('#join-offer-in').value = '';
   $('#join-answer-out').value = '';
-  /* ===== AJOUT QR MANUEL : reset du QR de réponse ===== */
   const joinQr = $('#join-answer-qr');
   if (joinQr){ joinQr.innerHTML = ''; joinQr.hidden = true; }
-  /* ===== FIN AJOUT ===== */
   showView('v-join');
   if (!manual) setTimeout(() => $('#join-code').focus(), 150);
 };
@@ -2605,13 +2563,12 @@ $('#btn-sas-confirm').onclick = onSasSelfConfirm;
 $('#btn-sas-reject').onclick  = onSasSelfReject;
 
 /* ============================================================
-   Scanner QR (refactoré pour accepter un callback)
+   Scanner QR
    ============================================================ */
 let qrScannerStream = null;
 let qrScanInterval = null;
 let qrScannerActive = false;
 
-/* ===== AJOUT QR MANUEL : startQRScan(onResult) ===== */
 async function startQRScan(onResult){
   const box = $('#qr-scanner-box');
   const video = $('#qr-scanner-video');
@@ -2673,7 +2630,6 @@ async function startQRScan(onResult){
   }
 }
 
-/* Bouton scanner du mode auto (#v-join) : extrait le code à 6 chiffres */
 $('#btn-scan-qr').onclick = () => startQRScan(code => {
   const m = code.match(/#join=(\d{6})/);
   const found = m ? m[1] : (code.match(/\d{6}/) || [])[0];
@@ -2685,7 +2641,6 @@ $('#btn-scan-qr').onclick = () => startQRScan(code => {
   }
 });
 
-/* ===== AJOUT QR MANUEL : boutons scanner manuels ===== */
 $('#btn-scan-answer-qr').onclick = () => startQRScan(async payload => {
   $('#host-answer-in').value = payload;
   await manualHostConnect();
@@ -2695,7 +2650,6 @@ $('#btn-scan-offer-qr').onclick = () => startQRScan(async payload => {
   $('#join-offer-in').value = payload;
   await manualJoinGenerate();
 });
-/* ===== FIN AJOUT ===== */
 
 $('#btn-close-scanner').onclick = stopQRScanner;
 

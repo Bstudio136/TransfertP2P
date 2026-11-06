@@ -1823,8 +1823,8 @@ function queueFiles(files){
 function connectMQTT(topic, onMsg, onFail) {
   if (mqttClient) mqttClient.end(true);
   
-  // Utilisation d'un broker public gratuit et fiable
-  mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+  // La correction consiste à séparer l'hôte et le chemin.
+  mqttClient = mqtt.connect('wss://broker.emqx.io:8084/', { path: '/mqtt' });
 
   mqttClient.on('connect', () => {
     mqttClient.subscribe(topic, { qos: 1 }, (err) => {

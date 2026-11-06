@@ -318,6 +318,17 @@
   .scanner-box{text-align:center;padding:12px;}
   .scanner-box video{max-height:50vh;object-fit:cover;}
 
+  /* ===== AJOUT QR MANUEL : overlay scanner (déplacé hors des vues) ===== */
+  .qr-overlay{
+    position:fixed;inset:0;z-index:95;
+    background:rgba(0,0,0,.82);
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .qr-overlay[hidden]{display:none}
+  .qr-overlay .scanner-box{max-width:420px;width:100%;margin:0}
+
   #h1-title{display:flex;align-items:center;gap:10px}
   #h1-title .h1-logo{
     width:32px;height:32px;border-radius:8px;flex:none;object-fit:cover;
@@ -405,15 +416,19 @@
        <div class="status" id="host-status" role="status" aria-live="polite"><span class="spinner"></span><span data-i18n="preparing">Préparation…</span></div>
     </div>
 
+    <!-- ===== AJOUT QR MANUEL : QR d'offre + scan de réponse ===== -->
     <div id="host-manual" hidden>
       <label data-i18n="manual-step-1-host">1 · Ton code à transmettre</label>
       <textarea id="host-offer" readonly placeholder="…"></textarea>
+      <div id="host-offer-qr" class="qr-container" hidden></div>
       <button class="btn ghost" id="btn-copy-offer" style="margin-top:8px">📋 <span data-i18n="manual-copy-code">Copier ce code</span></button>
 
       <label data-i18n="manual-step-2-host">2 · Colle la réponse de l'autre téléphone</label>
       <textarea id="host-answer-in" data-i18n-placeholder="answer-placeholder" placeholder="Colle ici la réponse reçue…"></textarea>
+      <button class="btn ghost" id="btn-scan-answer-qr" style="margin-top:8px" type="button">📷 <span data-i18n="scan-answer-qr">Scanner la réponse QR</span></button>
       <button class="btn primary" id="btn-host-connect" style="margin-top:12px" data-i18n="connect">Connecter</button>
     </div>
+    <!-- ===== FIN AJOUT ===== -->
 
     <button class="btn ghost" id="btn-cancel-host" data-i18n="cancel">Annuler</button>
   </section>
@@ -429,23 +444,21 @@
       <div class="status" id="join-status" role="status" aria-live="polite" hidden><span class="spinner"></span><span data-i18n="searching">Recherche…</span></div>
     </div>
 
-    <div id="qr-scanner-box" class="card scanner-box" hidden>
-      <video id="qr-scanner-video" playsinline muted></video>
-      <p class="hint" style="text-align:center" data-i18n="scan-hint">Pointez la caméra vers le QR code de l'expéditeur.</p>
-      <button class="btn ghost" id="btn-close-scanner" type="button" data-i18n="close">Fermer</button>
-    </div>
-
+    <!-- ===== AJOUT QR MANUEL : QR de réponse + scan d'offre ===== -->
     <div id="join-manual" hidden>
       <label data-i18n="manual-step-1-join">1 · Colle le code de l'autre téléphone</label>
       <textarea id="join-offer-in" data-i18n-placeholder="offer-placeholder" placeholder="Colle ici le code de l'expéditeur…"></textarea>
+      <button class="btn ghost" id="btn-scan-offer-qr" style="margin-top:8px" type="button">📷 <span data-i18n="scan-offer-qr">Scanner le QR de l'offre</span></button>
       <button class="btn primary" id="btn-join-gen" style="margin-top:12px" data-i18n="generate-answer">Générer ma réponse</button>
 
       <div id="join-answer-box" hidden>
         <label data-i18n="manual-step-2-join">2 · Renvoie cette réponse à l'expéditeur</label>
         <textarea id="join-answer-out" readonly></textarea>
+        <div id="join-answer-qr" class="qr-container" hidden></div>
         <button class="btn ghost" id="btn-copy-answer" style="margin-top:8px">📋 <span data-i18n="copy-answer">Copier la réponse</span></button>
       </div>
     </div>
+    <!-- ===== FIN AJOUT ===== -->
 
     <button class="btn ghost" id="btn-cancel-join" data-i18n="back">Retour</button>
   </section>
@@ -494,6 +507,16 @@
 
 </div>
 
+<!-- ===== AJOUT QR MANUEL : scanner déplacé en overlay global ===== -->
+<div id="qr-scanner-box" class="qr-overlay" hidden>
+  <div class="card scanner-box">
+    <video id="qr-scanner-video" playsinline muted></video>
+    <p class="hint" style="text-align:center" data-i18n="scan-hint">Pointez la caméra vers le QR code de l'expéditeur.</p>
+    <button class="btn ghost" id="btn-close-scanner" type="button" data-i18n="close">Fermer</button>
+  </div>
+</div>
+<!-- ===== FIN AJOUT ===== -->
+
 <footer class="footer">
   <span data-i18n="footer-dev">Développé par</span>
   <a href="https://bstudio136.github.io/mylink/" target="_blank" rel="noopener" id="footer-link">Bstudio136</a>
@@ -523,7 +546,7 @@ const I18N = {
     'manual-mode': 'Mode manuel', 'manual-suffix': '(sans serveur de signalisation)',
     'manual-desc': "Pas de serveur de signalisation ; échange manuel de l'offre et de la réponse WebRTC.",
     'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique transmet à ntfy.sh les informations temporaires nécessaires à WebRTC. Le code à 6 chiffres expire après 5 minutes. <strong>Après connexion, un code de sécurité (SAS) est affiché sur les deux appareils : compare-les pour détecter une éventuelle interception.</strong>",
-    'hint-manual': "<strong>Mode manuel :</strong> aucun serveur de signalisation n'est utilisé. Tu devras échanger deux codes par copier-coller (SMS, messagerie…). Le transfert des fichiers reste identique et pair-à-pair.",
+    'hint-manual': "<strong>Mode manuel :</strong> aucun serveur de signalisation n'est utilisé. Tu devras échanger deux codes par copier-coller (SMS, messagerie…) ou en scannant les QR codes affichés. Le transfert des fichiers reste identique et pair-à-pair.",
     'pairing-code-label': "Code d'invitation",
     'pairing-code-hint': "Copie le code ou scanne le QR. Vérifie ensuite le code de sécurité affiché sur les deux appareils.",
     'copy': 'Copier', 'share': 'Partager',
@@ -563,7 +586,7 @@ const I18N = {
     'crypto-required': 'Ce navigateur ne fournit pas de générateur aléatoire sécurisé. Mets-le à jour.',
     'eta': 'reste {time}',
     'hashing': 'Calcul de l’empreinte',
-    'scan-qr': '📷 Scanner un QR code', 'scan-hint': "Pointe la caméra vers le QR code de l'expéditeur.", 'close': 'Fermer', 'camera-unavailable': 'Caméra indisponible : ',
+    'scan-qr': '📷 Scanner un QR code', 'scan-hint': "Pointe la caméra vers le QR code.", 'close': 'Fermer', 'camera-unavailable': 'Caméra indisponible : ',
     'theme-auto': 'Thème : auto', 'theme-dark': 'Thème : sombre', 'theme-light': 'Thème : clair',
     'lang-changed': 'Langue : Français',
     'lang-label': 'Langue : Français — cliquer pour changer',
@@ -610,7 +633,12 @@ const I18N = {
     'sas-rejected-by-peer': "L'autre appareil a signalé une différence — session terminée.",
     'sas-error': 'Impossible de calculer le code de vérification.',
     'sas-first': "Vérifie d'abord l'appareil.",
-    'sas-mismatch': '⚠ Les codes de vérification ne correspondent pas.'
+    'sas-mismatch': '⚠ Les codes de vérification ne correspondent pas.',
+    /* ===== AJOUT QR MANUEL ===== */
+    'scan-answer-qr': 'Scanner la réponse QR',
+    'scan-offer-qr': "Scanner le QR de l'offre",
+    'qr-too-big': 'QR trop volumineux — utilise le copier-coller'
+    /* ===== FIN AJOUT ===== */
   },
   en: {
     'page-title': 'P2P Transfer — file sending between phones',
@@ -622,7 +650,7 @@ const I18N = {
     'manual-mode': 'Manual mode', 'manual-suffix': '(no signaling server)',
     'manual-desc': 'No signaling service; manually exchange the WebRTC offer and answer.',
     'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing sends temporary WebRTC connection details through ntfy.sh. The 6-digit code expires after 5 minutes. <strong>After connecting, a security code (SAS) is shown on both devices: compare them to detect interception.</strong>",
-    'hint-manual': "<strong>Manual mode:</strong> no signaling server is used. You will have to exchange two codes via copy/paste (SMS, messaging…). File transfer remains identical and peer-to-peer.",
+    'hint-manual': "<strong>Manual mode:</strong> no signaling server is used. You will have to exchange two codes via copy/paste (SMS, messaging…) or by scanning the displayed QR codes. File transfer remains identical and peer-to-peer.",
     'pairing-code-label': 'Temporary invitation',
     'pairing-code-hint': 'Copy the code or scan its QR. Then verify the security code on both devices.',
     'copy': 'Copy', 'share': 'Share',
@@ -662,7 +690,7 @@ const I18N = {
     'crypto-required': 'This browser has no secure random generator. Update it.',
     'eta': '{time} remaining',
     'hashing': 'Calculating fingerprint',
-    'scan-qr': '📷 Scan a QR code', 'scan-hint': "Point the camera at the sender's QR code.", 'close': 'Close', 'camera-unavailable': 'Camera unavailable: ',
+    'scan-qr': '📷 Scan a QR code', 'scan-hint': 'Point the camera at the QR code.', 'close': 'Close', 'camera-unavailable': 'Camera unavailable: ',
     'theme-auto': 'Theme: auto', 'theme-dark': 'Theme: dark', 'theme-light': 'Theme: light',
     'lang-changed': 'Language: English',
     'lang-label': 'Language: English — click to change',
@@ -709,7 +737,12 @@ const I18N = {
     'sas-rejected-by-peer': 'The other device reported a mismatch — session ended.',
     'sas-error': 'Could not compute verification code.',
     'sas-first': 'Verify the device first.',
-    'sas-mismatch': '⚠ Verification codes do not match.'
+    'sas-mismatch': '⚠ Verification codes do not match.',
+    /* ===== AJOUT QR MANUEL ===== */
+    'scan-answer-qr': 'Scan the answer QR',
+    'scan-offer-qr': 'Scan the offer QR',
+    'qr-too-big': 'QR too big — use copy-paste'
+    /* ===== FIN AJOUT ===== */
   },
   it: {
     'page-title': 'Trasferimento P2P — invio di file tra telefoni',
@@ -721,7 +754,7 @@ const I18N = {
     'manual-mode': 'Modalità manuale', 'manual-suffix': '(senza server di segnalazione)',
     'manual-desc': 'Nessun servizio di segnalazione; scambia manualmente offerta e risposta WebRTC.',
     'hint-auto': "I file viaggiano <strong>direttamente</strong> da un dispositivo all'altro: nessun file viene memorizzato su un server. Il codice a 6 cifre scade dopo 5 minuti. <strong>Dopo la connessione, un codice di sicurezza (SAS) viene mostrato su entrambi i dispositivi: confrontali per rilevare un'intercettazione.</strong>",
-    'hint-manual': "<strong>Modalità manuale:</strong> nessun server di segnalazione viene utilizzato. Dovrai scambiare due codici tramite copia/incolla (SMS, messaggistica…). Il trasferimento dei file rimane identico e peer-to-peer.",
+    'hint-manual': "<strong>Modalità manuale:</strong> nessun server di segnalazione viene utilizzato. Dovrai scambiare due codici tramite copia/incolla (SMS, messaggistica…) o scansionando i QR code visualizzati. Il trasferimento dei file rimane identico e peer-to-peer.",
     'pairing-code-label': 'Invito temporaneo',
     'pairing-code-hint': 'Copia il codice o scansiona il QR. Verifica poi il codice di sicurezza sui due dispositivi.',
     'copy': 'Copia', 'share': 'Condividi',
@@ -761,7 +794,7 @@ const I18N = {
     'crypto-required': 'Questo browser non dispone di un generatore casuale sicuro. Aggiornalo.',
     'eta': 'restano {time}',
     'hashing': 'Calcolo dell’impronta',
-    'scan-qr': '📷 Scansiona un QR code', 'scan-hint': 'Inquadra con la fotocamera il QR code del mittente.', 'close': 'Chiudi', 'camera-unavailable': 'Fotocamera non disponibile: ',
+    'scan-qr': '📷 Scansiona un QR code', 'scan-hint': 'Inquadra con la fotocamera il QR code.', 'close': 'Chiudi', 'camera-unavailable': 'Fotocamera non disponibile: ',
     'theme-auto': 'Tema: auto', 'theme-dark': 'Tema: scuro', 'theme-light': 'Tema: chiaro',
     'lang-changed': 'Lingua: Italiano',
     'lang-label': 'Lingua: Italiano — clicca per cambiare',
@@ -808,7 +841,12 @@ const I18N = {
     'sas-rejected-by-peer': "L'altro dispositivo ha segnalato una differenza — sessione terminata.",
     'sas-error': 'Impossibile calcolare il codice di verifica.',
     'sas-first': 'Verifica prima il dispositivo.',
-    'sas-mismatch': '⚠ I codici di verifica non corrispondono.'
+    'sas-mismatch': '⚠ I codici di verifica non corrispondono.',
+    /* ===== AJOUT QR MANUEL ===== */
+    'scan-answer-qr': 'Scansiona il QR della risposta',
+    'scan-offer-qr': "Scansiona il QR dell'offerta",
+    'qr-too-big': 'QR troppo grande — usa copia-incolla'
+    /* ===== FIN AJOUT ===== */
   },
   tr: {
     'page-title': 'P2P Transfer — telefonlar arası dosya gönderimi',
@@ -820,7 +858,7 @@ const I18N = {
     'manual-mode': 'Manuel mod', 'manual-suffix': '(sinyal sunucusu olmadan)',
     'manual-desc': 'Sinyal hizmeti kullanmaz; WebRTC teklifini ve yanıtını elle değiş tokuş et.',
     'hint-auto': "Dosyalar doğrudan bir cihazdan diğerine gider: hiçbir dosya sunucuda saklanmaz. 6 haneli kod 5 dakika sonra geçersiz olur. <strong>Bağlantıdan sonra her iki cihazda bir güvenlik kodu (SAS) gösterilir: araya girme olup olmadığını anlamak için bunları karşılaştır.</strong>",
-    'hint-manual': "<strong>Manuel mod:</strong> hiçbir sinyal sunucusu kullanılmaz. İki kodu kopyala-yapıştır (SMS, mesajlaşma…) ile değiştirmen gerekecek. Dosya transferi aynı kalır ve eşler arasıdır.",
+    'hint-manual': "<strong>Manuel mod:</strong> hiçbir sinyal sunucusu kullanılmaz. İki kodu kopyala-yapıştır (SMS, mesajlaşma…) veya gösterilen QR kodlarını tarayarak değiştirmen gerekecek. Dosya transferi aynı kalır ve eşler arasıdır.",
     'pairing-code-label': 'Geçici davet',
     'pairing-code-hint': 'Kodu kopyala veya QR kodunu tara. Ardından iki cihazdaki güvenlik kodunu karşılaştır.',
     'copy': 'Kopyala', 'share': 'Paylaş',
@@ -860,7 +898,7 @@ const I18N = {
     'crypto-required': 'Bu tarayıcıda güvenli rastgele sayı üreteci yok. Güncelle.',
     'eta': '{time} kaldı',
     'hashing': 'Parmak izi hesaplanıyor',
-    'scan-qr': '📷 QR kodu tara', 'scan-hint': 'Kamerayı gönderenin QR koduna doğrult.', 'close': 'Kapat', 'camera-unavailable': 'Kamera kullanılamıyor: ',
+    'scan-qr': '📷 QR kodu tara', 'scan-hint': 'Kamerayı QR koduna doğrult.', 'close': 'Kapat', 'camera-unavailable': 'Kamera kullanılamıyor: ',
     'theme-auto': 'Tema: otomatik', 'theme-dark': 'Tema: koyu', 'theme-light': 'Tema: açık',
     'lang-changed': 'Dil: Türkçe',
     'lang-label': 'Dil: Türkçe — değiştirmek için tıkla',
@@ -907,7 +945,12 @@ const I18N = {
     'sas-rejected-by-peer': 'Diğer cihaz farklılık bildirdi — oturum kapatıldı.',
     'sas-error': 'Doğrulama kodu hesaplanamadı.',
     'sas-first': 'Önce cihazı doğrula.',
-    'sas-mismatch': '⚠ Doğrulama kodları eşleşmiyor.'
+    'sas-mismatch': '⚠ Doğrulama kodları eşleşmiyor.',
+    /* ===== AJOUT QR MANUEL ===== */
+    'scan-answer-qr': 'Yanıt QR kodunu tara',
+    'scan-offer-qr': 'Teklif QR kodunu tara',
+    'qr-too-big': 'QR çok büyük — kopyala-yapıştır kullan'
+    /* ===== FIN AJOUT ===== */
   }
 };
 
@@ -1214,6 +1257,27 @@ function clearFileListUI(opts){
   $('#file-list').innerHTML = '';
 }
 
+/* ===== AJOUT QR MANUEL : rendu QR générique ===== */
+function renderQrPayload(container, payload){
+  if (!container) return false;
+  if (!payload){ container.innerHTML = ''; container.hidden = true; return false; }
+  if (typeof qrcode === 'undefined'){ container.hidden = true; return false; }
+  try {
+    /* Correction 'L' = capacité max (2953 octets, version 40) */
+    const qr = qrcode(0, 'L');
+    qr.addData(payload);
+    qr.make();
+    container.innerHTML = qr.createImgTag(4, 4);
+    container.hidden = false;
+    return true;
+  } catch (e) {
+    container.innerHTML = '';
+    container.hidden = true;
+    return false;
+  }
+}
+/* ===== FIN AJOUT ===== */
+
 /* ============================================================
    2. Hachage — Web Worker incrémental
    ============================================================ */
@@ -1305,8 +1369,7 @@ const NTFY = 'https://ntfy.sh/';
 const TOPIC_PREFIX = 'ftx7q-';
 const PAIRING_TTL = 5 * 60 * 1000; // 5 min
 
-// Fréquences réduites pour éviter de spammer ntfy.sh (429)
-const OFFER_INTERVAL = 15 * 1000;  // republier l'offre toutes les 15 s
+const OFFER_INTERVAL = 15 * 1000;
 
 /* ============================================================
    4. État global
@@ -1765,17 +1828,6 @@ function queueFiles(files){
 
 /* ============================================================
    9. Signalisation ntfy.sh
-
-   Réduction du nombre de requêtes :
-     • offre republiée toutes les OFFER_INTERVAL (15 s) au lieu de 2.5 s
-     • réponse publiée 1 seule fois (avec 1 retry si échec réseau)
-     • EventSource fermé après 4 erreurs successives pour couper
-       la boucle de reconnexion automatique du navigateur
-     • respect de Retry-After en cas de 429
-
-   Fallback automatique vers le mode manuel :
-     • sur 429 lors de la première publication de l'offre
-     • sur échec répété du flux SSE (serveur injoignable)
    ============================================================ */
 function subscribe(topic, onMsg, onFail){
   const src = new EventSource(NTFY + topic + '/sse');
@@ -1821,9 +1873,6 @@ async function publish(topic, payload, attempt){
   if (!response.ok) throw new Error('Signalisation HTTP ' + response.status);
 }
 
-/* Bascule automatique en mode manuel : on cache la section auto,
-   on affiche le textarea avec l'offre packée prête à copier-coller,
-   et on arrête la signalisation (setInterval + EventSource). */
 async function fallbackToManualHost(sdp, reason){
   if (mode === 'manual') return;
   if (connectedOnce) return;
@@ -1841,10 +1890,16 @@ async function fallbackToManualHost(sdp, reason){
   if (info) info.hidden = true;
   if (manual) manual.hidden = false;
 
+  /* ===== AJOUT QR MANUEL : QR d'offre après fallback ===== */
   if (sdp){
-    try { $('#host-offer').value = await packSDP(sdp); }
-    catch(_){}
+    try {
+      const packed = await packSDP(sdp);
+      $('#host-offer').value = packed;
+      const ok = renderQrPayload($('#host-offer-qr'), packed);
+      if (!ok) toast(t('qr-too-big'));
+    } catch(_){}
   }
+  /* ===== FIN AJOUT ===== */
 
   setHostStatus(t(reason), 'err');
   toast(t(reason));
@@ -1865,6 +1920,10 @@ async function startHost(){
   $('#host-manual').hidden = (mode !== 'manual');
   $('#host-offer').value = '';
   $('#host-answer-in').value = '';
+  /* ===== AJOUT QR MANUEL : reset du QR d'offre ===== */
+  const hostOfferQr = $('#host-offer-qr');
+  if (hostOfferQr){ hostOfferQr.innerHTML = ''; hostOfferQr.hidden = true; }
+  /* ===== FIN AJOUT ===== */
   clearFileListUI();
   setHostStatus(t('preparing'), 'spin');
   showView('v-host');
@@ -1881,7 +1940,14 @@ async function startHost(){
   }
 
   if (mode === 'manual'){
-    try { $('#host-offer').value = await packSDP(sdp); } catch(_){}
+    /* ===== AJOUT QR MANUEL : génération du QR d'offre ===== */
+    try {
+      const packed = await packSDP(sdp);
+      $('#host-offer').value = packed;
+      const ok = renderQrPayload($('#host-offer-qr'), packed);
+      if (!ok) toast(t('qr-too-big'));
+    } catch(_){}
+    /* ===== FIN AJOUT ===== */
     setHostStatus(t('manual-step-2-host'), '');
     return;
   }
@@ -1896,7 +1962,6 @@ async function startHost(){
     await fallbackToManualHost(sdp, reason);
   };
 
-  // 1) SSE : si le flux casse 4 fois, le serveur est inutilisable → manuel
   es = subscribe(topic, async msg => {
     if (msg.t !== 'answer') return;
     if (!Number.isFinite(msg.ts) || Math.abs(Date.now() - msg.ts) > PAIRING_TTL) return;
@@ -1910,7 +1975,6 @@ async function startHost(){
     }
   }, () => { doFallback('signal-error'); });
 
-  // 2) Publication de l'offre : fallback sur 429 (et sur 1er échec)
   const pub = async (isInitial) => {
     if (fallbackDone) return;
     try {
@@ -2011,7 +2075,6 @@ async function joinWithCode(){
 
     try{
       const answerSdp = await createAnswerSDP(msg.sdp);
-      // Envoi unique avec 1 retry réseau
       try {
         await publish(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() });
       } catch(e){
@@ -2070,7 +2133,12 @@ async function manualJoinGenerate(){
   try{
     const offerSdp = await unpackSDP(raw);
     const answerSdp = await createAnswerSDP(offerSdp);
-    $('#join-answer-out').value = await packSDP(answerSdp);
+    /* ===== AJOUT QR MANUEL : QR de la réponse ===== */
+    const packed = await packSDP(answerSdp);
+    $('#join-answer-out').value = packed;
+    const ok = renderQrPayload($('#join-answer-qr'), packed);
+    if (!ok) toast(t('qr-too-big'));
+    /* ===== FIN AJOUT ===== */
     $('#join-answer-box').hidden = false;
     $('#join-status').hidden = false;
     $('#join-status').className = 'status';
@@ -2321,6 +2389,13 @@ function cleanup(){
 
   const stats = $('#stats');
   if (stats) stats.hidden = true;
+
+  /* ===== AJOUT QR MANUEL : reset des QR manuels ===== */
+  const hostOfferQr = $('#host-offer-qr');
+  if (hostOfferQr){ hostOfferQr.innerHTML = ''; hostOfferQr.hidden = true; }
+  const joinAnswerQr = $('#join-answer-qr');
+  if (joinAnswerQr){ joinAnswerQr.innerHTML = ''; joinAnswerQr.hidden = true; }
+  /* ===== FIN AJOUT ===== */
 }
 
 function goHome(){
@@ -2458,6 +2533,10 @@ $('#btn-receive').onclick = () => {
   $('#join-answer-box').hidden = true;
   $('#join-offer-in').value = '';
   $('#join-answer-out').value = '';
+  /* ===== AJOUT QR MANUEL : reset du QR de réponse ===== */
+  const joinQr = $('#join-answer-qr');
+  if (joinQr){ joinQr.innerHTML = ''; joinQr.hidden = true; }
+  /* ===== FIN AJOUT ===== */
   showView('v-join');
   if (!manual) setTimeout(() => $('#join-code').focus(), 150);
 };
@@ -2518,13 +2597,14 @@ $('#btn-sas-confirm').onclick = onSasSelfConfirm;
 $('#btn-sas-reject').onclick  = onSasSelfReject;
 
 /* ============================================================
-   Scanner QR
+   Scanner QR (refactoré pour accepter un callback)
    ============================================================ */
 let qrScannerStream = null;
 let qrScanInterval = null;
 let qrScannerActive = false;
 
-$('#btn-scan-qr').onclick = async () => {
+/* ===== AJOUT QR MANUEL : startQRScan(onResult) ===== */
+async function startQRScan(onResult){
   const box = $('#qr-scanner-box');
   const video = $('#qr-scanner-video');
   box.hidden = false;
@@ -2570,14 +2650,7 @@ $('#btn-scan-qr').onclick = async () => {
 
       if (code) {
         stopQRScanner();
-        const m = code.match(/#join=(\d{6})/);
-        const found = m ? m[1] : (code.match(/\d{6}/) || [])[0];
-        if (found) {
-          $('#join-code').value = found;
-          joinWithCode();
-        } else {
-          toast(t('code-invalid') + code);
-        }
+        onResult(code);
         return;
       }
 
@@ -2590,7 +2663,31 @@ $('#btn-scan-qr').onclick = async () => {
     toast(t('camera-unavailable') + e.message);
     box.hidden = true;
   }
-};
+}
+
+/* Bouton scanner du mode auto (#v-join) : extrait le code à 6 chiffres */
+$('#btn-scan-qr').onclick = () => startQRScan(code => {
+  const m = code.match(/#join=(\d{6})/);
+  const found = m ? m[1] : (code.match(/\d{6}/) || [])[0];
+  if (found) {
+    $('#join-code').value = found;
+    joinWithCode();
+  } else {
+    toast(t('code-invalid') + code);
+  }
+});
+
+/* ===== AJOUT QR MANUEL : boutons scanner manuels ===== */
+$('#btn-scan-answer-qr').onclick = () => startQRScan(async payload => {
+  $('#host-answer-in').value = payload;
+  await manualHostConnect();
+});
+
+$('#btn-scan-offer-qr').onclick = () => startQRScan(async payload => {
+  $('#join-offer-in').value = payload;
+  await manualJoinGenerate();
+});
+/* ===== FIN AJOUT ===== */
 
 $('#btn-close-scanner').onclick = stopQRScanner;
 
@@ -2623,6 +2720,7 @@ window.addEventListener('keydown', e => {
   if (e.key === 'Escape'){
     const menu = $('#lang-menu');
     if (menu && !menu.hidden){ closeLangMenu(); return; }
+    if (qrScannerActive){ stopQRScanner(); return; }
     const active = $('.view.active');
     if (active && active.id !== 'v-home') goHome();
   }

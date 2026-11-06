@@ -1,5 +1,6 @@
 {
   "id": "/TransfertP2P/",
+  "scope": "/TransfertP2P/",
   "name": "TransfertP2P",
   "short_name": "TransfertP2P",
   "description": "Transfert de fichiers direct",

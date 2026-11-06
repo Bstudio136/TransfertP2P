@@ -20,7 +20,7 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
-<!-- Intégration de Trystero pour une signalisation fiable sans serveur -->
+<!-- Intégration de Trystero (Stratégie BitTorrent) pour une fiabilité maximale -->
 <script type="module">
   import { joinRoom } from 'https://esm.sh/trystero/torrent';
   window.Trystero = { joinRoom };
@@ -549,7 +549,7 @@ const I18N = {
     'receive-title': 'Recevoir des fichiers', 'receive-sub': "Saisis le code de l'autre téléphone",
     'manual-mode': 'Mode manuel', 'manual-suffix': '(sans serveur de signalisation)',
     'manual-desc': "Pas de serveur de signalisation ; échange manuel de l'offre et de la réponse WebRTC.",
-    'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique utilise le réseau décentralisé Nostr (via Trystero) pour une connexion fiable. Le code à 6 chiffres expire après 5 minutes.",
+    'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique utilise le réseau BitTorrent (via Trystero) pour une connexion fiable. Le code à 6 chiffres expire après 5 minutes.",
     'hint-manual': "<strong>Mode manuel :</strong> aucun serveur de signalisation n'est utilisé. Tu devras échanger deux codes par copier-coller (SMS, messagerie…) ou en scannant les QR codes affichés. Le transfert des fichiers reste identique et pair-à-pair.",
     'pairing-code-label': "Code d'invitation",
     'pairing-code-hint': "Copie le code ou scanne le QR. La connexion se fera automatiquement.",
@@ -651,7 +651,7 @@ const I18N = {
     'receive-title': 'Receive files', 'receive-sub': "Enter the other phone's code",
     'manual-mode': 'Manual mode', 'manual-suffix': '(no signaling server)',
     'manual-desc': 'No signaling service; manually exchange the WebRTC offer and answer.',
-    'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing uses the decentralized Nostr network (via Trystero) for a reliable connection. The 6-digit code expires after 5 minutes.",
+    'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing uses the decentralized BitTorrent network (via Trystero) for a reliable connection. The 6-digit code expires after 5 minutes.",
     'hint-manual': "<strong>Manual mode:</strong> no signaling server is used. You will have to exchange two codes via copy/paste (SMS, messaging…) or by scanning the displayed QR codes. File transfer remains identical and peer-to-peer.",
     'pairing-code-label': 'Temporary invitation',
     'pairing-code-hint': 'Copy the code or scan its QR. The connection will happen automatically.',
@@ -1905,18 +1905,10 @@ async function startHost(){
     return;
   }
 
-  // --- Mode auto (Trystero) ---
+  // --- Mode auto (Trystero BitTorrent) ---
   const roomId = TOPIC_PREFIX + pairingCode;
-  const myRelays = [
-    'wss://relay.damus.io',
-    'wss://nos.lol',
-    'wss://relay.primal.net',
-    'wss://relay.nostr.band'
-  ];
-  trysteroRoom = window.Trystero.joinRoom({
-    appId: 'transfertp2p',
-    relayUrls: myRelays
-  }, roomId);
+  
+  trysteroRoom = window.Trystero.joinRoom({ appId: 'transfertp2p' }, roomId);
 
   trysteroRoom.onPeerJoin(peerId => {
     onConnected();
@@ -2002,16 +1994,7 @@ async function joinWithCode(){
     st.textContent = t('code-expired');
   }, PAIRING_TTL);
 
-  const myRelays = [
-    'wss://relay.damus.io',
-    'wss://nos.lol',
-    'wss://relay.primal.net',
-    'wss://relay.nostr.band'
-  ];
-  trysteroRoom = window.Trystero.joinRoom({
-    appId: 'transfertp2p',
-    relayUrls: myRelays
-  }, topic);
+  trysteroRoom = window.Trystero.joinRoom({ appId: 'transfertp2p' }, topic);
 
   trysteroRoom.onPeerJoin(peerId => {
     onConnected();

@@ -4,40 +4,21 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="dark light" />
-<meta name="theme-color" content="#0a0a0a" />
+<meta name="theme-color" content="#0a0e14" />
 <meta name="description" content="Transfère tes fichiers directement entre appareils avec WebRTC. Aucun fichier n'est stocké sur un serveur." />
 <title>Transfert P2P — envoi de fichiers entre téléphones</title>
 
-<link rel="manifest" href="transfert.webmanifest" />
-
-<!-- ====== FAVICON / ICÔNE DE L'APPLICATION ====== -->
-<link rel="icon" type="image/png" sizes="any" href="https://cdn.jsdelivr.net/gh/Bstudio136/TransfertP2P@main/p2p.png" />
-<link rel="shortcut icon" type="image/png" href="https://cdn.jsdelivr.net/gh/Bstudio136/TransfertP2P@main/p2p.png" />
-<link rel="apple-touch-icon" sizes="180x180" href="https://cdn.jsdelivr.net/gh/Bstudio136/TransfertP2P@main/p2p.png" />
-<meta name="msapplication-TileImage" content="https://cdn.jsdelivr.net/gh/Bstudio136/TransfertP2P@main/p2p.png" />
-<meta name="msapplication-TileColor" content="#0a0a0a" />
-
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-<!-- Intégration de PeerJS -->
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
 <style>
   *,*::before,*::after{box-sizing:border-box}
   :root{
     color-scheme: dark;
-    --bg:#0a0a0a;
-    --bg-grad:radial-gradient(ellipse at 50% -10%, #1c1c1c 0%, #0a0a0a 65%);
-    --card:#161616;
-    --card2:#1c1c1c;
-    --text:#f5f1e6;
-    --muted:#a8a29a;
-    --border:#2a2a2a;
-    --accent:#d4af37;
-    --accent-hi:#f5c518;
-    --accent-lo:#b8860b;
-    --on-accent:#1a1200;
-    --accent-soft:rgba(212, 175, 55, .12);
+    --bg:#0a0e14; --bg-grad:radial-gradient(ellipse at 50% -10%, #141b25 0%, #0a0e14 65%);
+    --card:#141b25; --card2:#1c2532; --text:#e9eff7; --muted:#8fa0b6; --border:#26303f;
+    --accent:#f5b915; --accent-hi:#fbbf24; --accent-lo:#b8860b; --on-accent:#1a1200;
+    --accent-soft:rgba(245,185,21,.12);
     --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
     --radius:18px; --shadow:0 10px 40px -10px rgba(0,0,0,.55);
     --footer-h:72px;
@@ -159,33 +140,8 @@
     0%,100%{text-shadow:0 0 24px var(--accent-soft);transform:scale(1)}
     50%{text-shadow:0 0 36px var(--accent), 0 0 60px var(--accent-soft);transform:scale(1.015)}
   }
-
-  .code-actions { display: flex; gap: 12px; margin-top: 16px; }
-  .code-actions .btn {
-    flex: 1; margin: 0; min-height: 48px; padding: 10px 16px;
-    font-size: 0.9rem; font-weight: 600; border-radius: 12px;
-    letter-spacing: 0.02em;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  }
-  .code-actions .btn:hover { transform: translateY(-2px); }
-  .code-actions .btn:active { transform: translateY(0) scale(0.97); }
-  .code-actions .btn.ghost {
-    background: var(--card2); border: 1px solid var(--border); color: var(--text);
-  }
-  .code-actions .btn.ghost:hover {
-    background: var(--border); border-color: var(--muted);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  }
-  .code-actions .btn.share-btn {
-    background: var(--accent-soft); border: 1px solid var(--accent);
-    color: var(--accent); box-shadow: 0 4px 16px var(--accent-soft);
-  }
-  .code-actions .btn.share-btn:hover {
-    background: var(--accent); color: var(--on-accent);
-    border-color: var(--accent); box-shadow: 0 6px 20px var(--accent-soft);
-  }
+  .code-actions{display:flex;gap:8px;margin-top:8px}
+  .code-actions .btn{flex:1;margin:0;min-height:44px;font-size:.82rem;padding:10px}
 
   label{display:block;font-size:.74rem;color:var(--muted);margin:16px 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
   input[type=text],textarea{width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px;font:inherit;outline:none;transition:border-color .15s,box-shadow .15s;}
@@ -217,8 +173,12 @@
   .stats .sep{opacity:.4}
   .rtt-good{color:var(--ok)}.rtt-mid{color:var(--warn)}.rtt-bad{color:var(--err)}
 
+  /* ============ SAS CARD ============ */
   .sas-card{border-color:var(--accent);background:linear-gradient(180deg, var(--accent-soft) 0%, var(--card) 100%)}
-  .sas-label{text-align:center;font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--muted);margin-bottom:4px;}
+  .sas-label{
+    text-align:center;font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;
+    font-weight:700;color:var(--muted);margin-bottom:4px;
+  }
   .sas-code{
     font-family:ui-monospace,monospace;font-size:clamp(2.2rem, 9vw, 3.2rem);
     font-weight:800;letter-spacing:.3rem;text-align:center;padding:8px 0;
@@ -274,7 +234,7 @@
     font-size:clamp(1.1rem,3vw,1.5rem);font-weight:700;color:var(--accent);text-align:center;padding:24px;
   }
   body.dragging .drop-overlay{display:flex;animation:dropPulse 1.2s ease-in-out infinite}
-  @keyframes dropPulse{0%,100%{border-color:var(--accent);background:var(--accent-soft)}50%{border-color:var(--accent-hi);background:rgba(212,175,55,.2)}}
+  @keyframes dropPulse{0%,100%{border-color:var(--accent);background:var(--accent-soft)}50%{border-color:var(--accent-hi);background:rgba(245,185,21,.2)}}
 
   .hint{font-size:.78rem;color:var(--muted);line-height:1.55}
   .toggle{
@@ -319,26 +279,6 @@
   #qr-scanner-video{width:100%;max-width:360px;border-radius:16px;display:block;margin:0 auto 12px;background:#000;}
   .scanner-box{text-align:center;padding:12px;}
   .scanner-box video{max-height:50vh;object-fit:cover;}
-
-  .qr-overlay{
-    position:fixed;inset:0;z-index:95;
-    background:rgba(0,0,0,.82);
-    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-    display:flex;align-items:center;justify-content:center;
-    padding:24px;
-  }
-  .qr-overlay[hidden]{display:none}
-  .qr-overlay .scanner-box{max-width:420px;width:100%;margin:0}
-
-  #h1-title{display:flex;align-items:center;gap:10px}
-  #h1-title .h1-logo{
-    width:32px;height:32px;border-radius:8px;flex:none;object-fit:cover;
-    box-shadow:0 2px 8px rgba(0,0,0,.35);
-    background:#0a0a0a;
-  }
-  @media (min-width: 900px){
-    #h1-title .h1-logo{width:38px;height:38px;border-radius:10px}
-  }
 </style>
 </head>
 <body>
@@ -369,6 +309,7 @@
     </div>
   </div>
 
+  <!-- ===================== ACCUEIL ===================== -->
   <section class="view active" id="v-home" style="margin-top:20px">
     <button class="btn primary" id="btn-send">
       <span class="ico">📤</span>
@@ -397,6 +338,7 @@
     <p class="hint" id="hint-home" style="margin-top:16px" data-i18n-html="hint-auto"></p>
   </section>
 
+  <!-- ===================== HÔTE ===================== -->
   <section class="view" id="v-host">
     <div class="card">
       <div id="auto-pairing-info">
@@ -407,12 +349,10 @@
         Copie l'invitation ou scanne le QR code. Vérifie ensuite le code de sécurité.
       </p>
       <div id="qr-container" class="qr-container" hidden></div>
-
       <div class="code-actions">
         <button class="btn ghost" id="btn-copy-code" type="button">📋 <span data-i18n="copy">Copier</span></button>
-        <button class="btn share-btn" id="btn-share-code" type="button">📤 <span data-i18n="share">Partager</span></button>
+        <button class="btn ghost" id="btn-share-code" type="button">📤 <span data-i18n="share">Partager</span></button>
       </div>
-
       </div>
        <div class="status" id="host-status" role="status" aria-live="polite"><span class="spinner"></span><span data-i18n="preparing">Préparation…</span></div>
     </div>
@@ -420,18 +360,17 @@
     <div id="host-manual" hidden>
       <label data-i18n="manual-step-1-host">1 · Ton code à transmettre</label>
       <textarea id="host-offer" readonly placeholder="…"></textarea>
-      <div id="host-offer-qr" class="qr-container" hidden></div>
       <button class="btn ghost" id="btn-copy-offer" style="margin-top:8px">📋 <span data-i18n="manual-copy-code">Copier ce code</span></button>
 
       <label data-i18n="manual-step-2-host">2 · Colle la réponse de l'autre téléphone</label>
       <textarea id="host-answer-in" data-i18n-placeholder="answer-placeholder" placeholder="Colle ici la réponse reçue…"></textarea>
-      <button class="btn ghost" id="btn-scan-answer-qr" style="margin-top:8px" type="button">📷 <span data-i18n="scan-answer-qr">Scanner la réponse QR</span></button>
       <button class="btn primary" id="btn-host-connect" style="margin-top:12px" data-i18n="connect">Connecter</button>
     </div>
 
     <button class="btn ghost" id="btn-cancel-host" data-i18n="cancel">Annuler</button>
   </section>
 
+  <!-- ===================== REJOINDRE ===================== -->
   <section class="view" id="v-join">
     <div class="card" id="join-code-card">
       <label for="join-code" style="margin-top:0" data-i18n="join-label">Code à 6 chiffres</label>
@@ -443,16 +382,20 @@
       <div class="status" id="join-status" role="status" aria-live="polite" hidden><span class="spinner"></span><span data-i18n="searching">Recherche…</span></div>
     </div>
 
+    <div id="qr-scanner-box" class="card scanner-box" hidden>
+      <video id="qr-scanner-video" playsinline muted></video>
+      <p class="hint" style="text-align:center" data-i18n="scan-hint">Pointez la caméra vers le QR code de l'expéditeur.</p>
+      <button class="btn ghost" id="btn-close-scanner" type="button" data-i18n="close">Fermer</button>
+    </div>
+
     <div id="join-manual" hidden>
       <label data-i18n="manual-step-1-join">1 · Colle le code de l'autre téléphone</label>
       <textarea id="join-offer-in" data-i18n-placeholder="offer-placeholder" placeholder="Colle ici le code de l'expéditeur…"></textarea>
-      <button class="btn ghost" id="btn-scan-offer-qr" style="margin-top:8px" type="button">📷 <span data-i18n="scan-offer-qr">Scanner le QR de l'offre</span></button>
       <button class="btn primary" id="btn-join-gen" style="margin-top:12px" data-i18n="generate-answer">Générer ma réponse</button>
 
       <div id="join-answer-box" hidden>
         <label data-i18n="manual-step-2-join">2 · Renvoie cette réponse à l'expéditeur</label>
         <textarea id="join-answer-out" readonly></textarea>
-        <div id="join-answer-qr" class="qr-container" hidden></div>
         <button class="btn ghost" id="btn-copy-answer" style="margin-top:8px">📋 <span data-i18n="copy-answer">Copier la réponse</span></button>
       </div>
     </div>
@@ -460,6 +403,7 @@
     <button class="btn ghost" id="btn-cancel-join" data-i18n="back">Retour</button>
   </section>
 
+  <!-- ===================== SESSION ===================== -->
   <section class="view" id="v-main">
     <div class="card session-card">
       <div class="status" id="conn-status" role="status" aria-live="polite" style="margin:0">
@@ -472,6 +416,7 @@
       </div>
     </div>
 
+    <!-- SAS CARD -->
     <div class="card sas-card" id="sas-card" hidden>
       <div class="sas-label" data-i18n="sas-title">Vérification de l'appareil</div>
       <div class="sas-code" id="sas-code">······</div>
@@ -504,14 +449,6 @@
 
 </div>
 
-<div id="qr-scanner-box" class="qr-overlay" hidden>
-  <div class="card scanner-box">
-    <video id="qr-scanner-video" playsinline muted></video>
-    <p class="hint" style="text-align:center" data-i18n="scan-hint">Pointez la caméra vers le QR code de l'expéditeur.</p>
-    <button class="btn ghost" id="btn-close-scanner" type="button" data-i18n="close">Fermer</button>
-  </div>
-</div>
-
 <footer class="footer">
   <span data-i18n="footer-dev">Développé par</span>
   <a href="https://bstudio136.github.io/mylink/" target="_blank" rel="noopener" id="footer-link">Bstudio136</a>
@@ -520,7 +457,7 @@
 <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
-(async function(){
+(function(){
 'use strict';
 
 /* ============================================================
@@ -528,7 +465,6 @@
    ============================================================ */
 const LANG_KEY = 'ftxp2p-lang';
 const LANGUAGES = ['fr','en','it','tr'];
-const LOGO_URL = 'https://cdn.jsdelivr.net/gh/Bstudio136/TransfertP2P@main/p2p.png';
 
 const I18N = {
   fr: {
@@ -540,10 +476,10 @@ const I18N = {
     'receive-title': 'Recevoir des fichiers', 'receive-sub': "Saisis le code de l'autre téléphone",
     'manual-mode': 'Mode manuel', 'manual-suffix': '(sans serveur de signalisation)',
     'manual-desc': "Pas de serveur de signalisation ; échange manuel de l'offre et de la réponse WebRTC.",
-    'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique utilise votre serveur JS dédié pour une connexion fiable. Le code à 6 chiffres expire après 5 minutes.",
-    'hint-manual': "<strong>Mode manuel :</strong> aucun serveur de signalisation n'est utilisé. Tu devras échanger deux codes par copier-coller (SMS, messagerie…) ou en scannant les QR codes affichés. Le transfert des fichiers reste identique et pair-à-pair.",
+    'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique transmet à ntfy.sh les informations temporaires nécessaires à WebRTC. Le code à 6 chiffres expire après 5 minutes. <strong>Après connexion, un code de sécurité (SAS) est affiché sur les deux appareils : compare-les pour détecter une éventuelle interception.</strong>",
+    'hint-manual': "<strong>Mode manuel :</strong> aucun serveur de signalisation n'est utilisé. Tu devras échanger deux codes par copier-coller (SMS, messagerie…). Le transfert des fichiers reste identique et pair-à-pair.",
     'pairing-code-label': "Code d'invitation",
-    'pairing-code-hint': "Copie le code ou scanne le QR. La connexion se fera automatiquement.",
+    'pairing-code-hint': "Copie le code ou scanne le QR. Vérifie ensuite le code de sécurité affiché sur les deux appareils.",
     'copy': 'Copier', 'share': 'Partager',
     'preparing': 'Préparation de la connexion…',
     'manual-step-1-host': '1 · Ton code à transmettre',
@@ -554,7 +490,7 @@ const I18N = {
     'join-label': "Code d'invitation (6 chiffres)",
     'join-placeholder': '123 456',
     'join-btn': 'Se connecter', 'searching': 'Recherche…',
-    'searching-': "Recherche de l'autre téléphone…",
+    'searching-peer': "Recherche de l'autre téléphone…",
     'offer-received': 'Offre reçue, négociation…',
     'connecting': 'Connexion en cours…',
     'nego-failed': 'Échec de la négociation : ',
@@ -575,13 +511,13 @@ const I18N = {
     'connect-first': "Connecte-toi d'abord à un appareil",
     'clear-confirm': 'Vider la liste ? Les fichiers en mémoire seront supprimés sur CET appareil ET sur l\'autre (les fichiers déjà téléchargés restent sur le disque).',
     'clear-busy': "Attends la fin du transfert en cours avant de vider la liste.",
-    'list-cleared-by-': "L'autre appareil a vidé la liste.",
+    'list-cleared-by-peer': "L'autre appareil a vidé la liste.",
     'enter-pairing-code': 'Saisis les 6 chiffres du code',
     'code-expired': "Code expiré. Redemande un code à l'autre appareil.",
     'crypto-required': 'Ce navigateur ne fournit pas de générateur aléatoire sécurisé. Mets-le à jour.',
     'eta': 'reste {time}',
     'hashing': 'Calcul de l’empreinte',
-    'scan-qr': '📷 Scanner un QR code', 'scan-hint': "Pointe la caméra vers le QR code.", 'close': 'Fermer', 'camera-unavailable': 'Caméra indisponible : ',
+    'scan-qr': '📷 Scanner un QR code', 'scan-hint': "Pointe la caméra vers le QR code de l'expéditeur.", 'close': 'Fermer', 'camera-unavailable': 'Caméra indisponible : ',
     'theme-auto': 'Thème : auto', 'theme-dark': 'Thème : sombre', 'theme-light': 'Thème : clair',
     'lang-changed': 'Langue : Français',
     'lang-label': 'Langue : Français — cliquer pour changer',
@@ -603,11 +539,10 @@ const I18N = {
     'code-invalid': 'Code invalide : ',
     'paste-answer': "Colle d'abord la réponse",
     'paste-offer': "Colle d'abord le code de l'expéditeur",
-    'waiting-': "En attente… saisis ce code sur l'autre téléphone.",
+    'waiting-peer': "En attente… saisis ce code sur l'autre téléphone.",
     'answer-received': 'Réponse reçue, connexion en cours…',
     'answer-invalid': 'Réponse invalide, réessaie.',
     'signal-error': 'Serveur de signalisation injoignable — utilise le mode manuel.',
-    'rate-limited': 'Service de signalisation saturé. Passage automatique en mode manuel.',
     'error-prefix': 'Erreur',
     'footer-dev': 'Développé par',
     'decomp-unavailable': 'Ce navigateur ne sait pas décompresser. Utilise un navigateur plus récent.',
@@ -615,23 +550,21 @@ const I18N = {
     'share-text': "Code Transfert P2P : {code}\nOuvre l'app et appuie sur « Recevoir ».",
     'share-title': 'Transfert P2P',
     'lang-menu-label': 'Choisir la langue',
+    /* SAS */
     'sas-title': "Vérification de l'appareil",
     'sas-hint': "<strong>Compare ce code avec l'autre appareil</strong> (de vive voix, par appel, etc.). Ils doivent être <strong>identiques</strong>. Ne clique sur ✓ que si tu as vraiment vérifié.",
     'sas-confirm': '✓ Ils correspondent',
     'sas-reject': '✗ Ils diffèrent',
     'sas-waiting': 'En attente de confirmation…',
-    'sas-waiting-': "En attente de confirmation de l'autre appareil…",
+    'sas-waiting-peer': "En attente de confirmation de l'autre appareil…",
     'sas-waiting-you': "L'autre appareil a confirmé. À toi de confirmer.",
     'sas-verified': '✓ Appareil vérifié',
     'sas-verified-toast': 'Appareil vérifié — transfert débloqué',
     'sas-rejected-warning': "Codes différents — possible tentative d'interception. Session terminée.",
-    'sas-rejected-by-': "L'autre appareil a signalé une différence — session terminée.",
+    'sas-rejected-by-peer': "L'autre appareil a signalé une différence — session terminée.",
     'sas-error': 'Impossible de calculer le code de vérification.',
     'sas-first': "Vérifie d'abord l'appareil.",
-    'sas-mismatch': '⚠ Les codes de vérification ne correspondent pas.',
-    'scan-answer-qr': 'Scanner la réponse QR',
-    'scan-offer-qr': "Scanner le QR de l'offre",
-    'qr-too-big': 'QR trop volumineux — utilise le copier-coller'
+    'sas-mismatch': '⚠ Les codes de vérification ne correspondent pas.'
   },
   en: {
     'page-title': 'P2P Transfer — file sending between phones',
@@ -642,10 +575,10 @@ const I18N = {
     'receive-title': 'Receive files', 'receive-sub': "Enter the other phone's code",
     'manual-mode': 'Manual mode', 'manual-suffix': '(no signaling server)',
     'manual-desc': 'No signaling service; manually exchange the WebRTC offer and answer.',
-    'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing uses your dedicated JS server for a reliable connection. The 6-digit code expires after 5 minutes.",
-    'hint-manual': "<strong>Manual mode:</strong> no signaling server is used. You will have to exchange two codes via copy/paste (SMS, messaging…) or by scanning the displayed QR codes. File transfer remains identical and -to-.",
+    'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing sends temporary WebRTC connection details through ntfy.sh. The 6-digit code expires after 5 minutes. <strong>After connecting, a security code (SAS) is shown on both devices: compare them to detect interception.</strong>",
+    'hint-manual': "<strong>Manual mode:</strong> no signaling server is used. You will have to exchange two codes via copy/paste (SMS, messaging…). File transfer remains identical and peer-to-peer.",
     'pairing-code-label': 'Temporary invitation',
-    'pairing-code-hint': 'Copy the code or scan its QR. The connection will happen automatically.',
+    'pairing-code-hint': 'Copy the code or scan its QR. Then verify the security code on both devices.',
     'copy': 'Copy', 'share': 'Share',
     'preparing': 'Preparing connection…',
     'manual-step-1-host': '1 · Your code to transmit',
@@ -656,7 +589,7 @@ const I18N = {
     'join-label': 'Invitation code (6 digits)',
     'join-placeholder': '123 456',
     'join-btn': 'Connect', 'searching': 'Searching…',
-    'searching-': 'Searching for the other phone…',
+    'searching-peer': 'Searching for the other phone…',
     'offer-received': 'Offer received, negotiating…',
     'connecting': 'Connecting…',
     'nego-failed': 'Negotiation failed: ',
@@ -677,13 +610,13 @@ const I18N = {
     'connect-first': 'Connect to a device first',
     'clear-confirm': 'Clear the list? Files in memory will be removed on THIS device AND on the other (files already downloaded stay on disk).',
     'clear-busy': 'Wait for the current transfer to finish before clearing the list.',
-    'list-cleared-by-': 'The other device cleared the list.',
+    'list-cleared-by-peer': 'The other device cleared the list.',
     'enter-pairing-code': 'Enter the 6-digit code',
     'code-expired': 'Code expired. Ask for a new code from the other device.',
     'crypto-required': 'This browser has no secure random generator. Update it.',
     'eta': '{time} remaining',
     'hashing': 'Calculating fingerprint',
-    'scan-qr': '📷 Scan a QR code', 'scan-hint': 'Point the camera at the QR code.', 'close': 'Close', 'camera-unavailable': 'Camera unavailable: ',
+    'scan-qr': '📷 Scan a QR code', 'scan-hint': "Point the camera at the sender's QR code.", 'close': 'Close', 'camera-unavailable': 'Camera unavailable: ',
     'theme-auto': 'Theme: auto', 'theme-dark': 'Theme: dark', 'theme-light': 'Theme: light',
     'lang-changed': 'Language: English',
     'lang-label': 'Language: English — click to change',
@@ -705,11 +638,10 @@ const I18N = {
     'code-invalid': 'Invalid code: ',
     'paste-answer': 'Paste the answer first',
     'paste-offer': "Paste the sender's code first",
-    'waiting-': 'Waiting… enter this code on the other phone.',
+    'waiting-peer': 'Waiting… enter this code on the other phone.',
     'answer-received': 'Answer received, connecting…',
     'answer-invalid': 'Invalid answer, try again.',
     'signal-error': 'Signaling server unreachable — use manual mode.',
-    'rate-limited': 'Signaling service overloaded. Switching automatically to manual mode.',
     'error-prefix': 'Error',
     'footer-dev': 'Developed by',
     'decomp-unavailable': 'This browser cannot decompress. Use a more recent browser.',
@@ -722,18 +654,15 @@ const I18N = {
     'sas-confirm': '✓ They match',
     'sas-reject': '✗ They differ',
     'sas-waiting': 'Waiting for confirmation…',
-    'sas-waiting-': 'Waiting for the other device to confirm…',
+    'sas-waiting-peer': 'Waiting for the other device to confirm…',
     'sas-waiting-you': 'The other device confirmed. Your turn.',
     'sas-verified': '✓ Device verified',
     'sas-verified-toast': 'Device verified — transfer unlocked',
     'sas-rejected-warning': 'Codes differ — possible interception attempt. Session ended.',
-    'sas-rejected-by-': 'The other device reported a mismatch — session ended.',
+    'sas-rejected-by-peer': 'The other device reported a mismatch — session ended.',
     'sas-error': 'Could not compute verification code.',
     'sas-first': 'Verify the device first.',
-    'sas-mismatch': '⚠ Verification codes do not match.',
-    'scan-answer-qr': 'Scan the answer QR',
-    'scan-offer-qr': 'Scan the offer QR',
-    'qr-too-big': 'QR too big — use copy-paste'
+    'sas-mismatch': '⚠ Verification codes do not match.'
   },
   it: {
     'page-title': 'Trasferimento P2P — invio di file tra telefoni',
@@ -744,10 +673,10 @@ const I18N = {
     'receive-title': 'Ricevi file', 'receive-sub': "Inserisci il codice dell'altro telefono",
     'manual-mode': 'Modalità manuale', 'manual-suffix': '(senza server di segnalazione)',
     'manual-desc': 'Nessun servizio di segnalazione; scambia manualmente offerta e risposta WebRTC.',
-    'hint-auto': "I file viaggiano <strong>direttamente</strong> da un dispositivo all'altro: nessun file viene memorizzato su un server. Il codice a 6 cifre scade dopo 5 minuti.",
-    'hint-manual': "<strong>Modalità manuale:</strong> nessun server di segnalazione viene utilizzato. Dovrai scambiare due codici tramite copia/incolla (SMS, messaggistica…) o scansionando i QR code visualizzati. Il trasferimento dei file rimane identico e -to-.",
+    'hint-auto': "I file viaggiano <strong>direttamente</strong> da un dispositivo all'altro: nessun file viene memorizzato su un server. Il codice a 6 cifre scade dopo 5 minuti. <strong>Dopo la connessione, un codice di sicurezza (SAS) viene mostrato su entrambi i dispositivi: confrontali per rilevare un'intercettazione.</strong>",
+    'hint-manual': "<strong>Modalità manuale:</strong> nessun server di segnalazione viene utilizzato. Dovrai scambiare due codici tramite copia/incolla (SMS, messaggistica…). Il trasferimento dei file rimane identico e peer-to-peer.",
     'pairing-code-label': 'Invito temporaneo',
-    'pairing-code-hint': 'Copia il codice o scansiona il QR. La connessione avverrà automaticamente.',
+    'pairing-code-hint': 'Copia il codice o scansiona il QR. Verifica poi il codice di sicurezza sui due dispositivi.',
     'copy': 'Copia', 'share': 'Condividi',
     'preparing': 'Preparazione della connessione…',
     'manual-step-1-host': '1 · Il tuo codice da trasmettere',
@@ -758,7 +687,7 @@ const I18N = {
     'join-label': 'Codice di invito (6 cifre)',
     'join-placeholder': '123 456',
     'join-btn': 'Connetti', 'searching': 'Ricerca…',
-    'searching-': "Ricerca dell'altro telefono…",
+    'searching-peer': "Ricerca dell'altro telefono…",
     'offer-received': 'Offerta ricevuta, negoziazione…',
     'connecting': 'Connessione in corso…',
     'nego-failed': 'Negoziazione fallita: ',
@@ -779,13 +708,13 @@ const I18N = {
     'connect-first': 'Connettiti prima a un dispositivo',
     'clear-confirm': "Svuotare l'elenco? I file in memoria saranno rimossi su QUESTO dispositivo E sull'altro (i file già scaricati restano sul disco).",
     'clear-busy': 'Attendi la fine del trasferimento in corso prima di svuotare l\'elenco.',
-    'list-cleared-by-': "L'altro dispositivo ha svuotato l'elenco.",
+    'list-cleared-by-peer': "L'altro dispositivo ha svuotato l'elenco.",
     'enter-pairing-code': 'Inserisci le 6 cifre del codice',
     'code-expired': "Codice scaduto. Richiedi un nuovo codice all'altro dispositivo.",
     'crypto-required': 'Questo browser non dispone di un generatore casuale sicuro. Aggiornalo.',
     'eta': 'restano {time}',
     'hashing': 'Calcolo dell’impronta',
-    'scan-qr': '📷 Scansiona un QR code', 'scan-hint': 'Inquadra con la fotocamera il QR code.', 'close': 'Chiudi', 'camera-unavailable': 'Fotocamera non disponibile: ',
+    'scan-qr': '📷 Scansiona un QR code', 'scan-hint': 'Inquadra con la fotocamera il QR code del mittente.', 'close': 'Chiudi', 'camera-unavailable': 'Fotocamera non disponibile: ',
     'theme-auto': 'Tema: auto', 'theme-dark': 'Tema: scuro', 'theme-light': 'Tema: chiaro',
     'lang-changed': 'Lingua: Italiano',
     'lang-label': 'Lingua: Italiano — clicca per cambiare',
@@ -807,11 +736,10 @@ const I18N = {
     'code-invalid': 'Codice non valido: ',
     'paste-answer': 'Incolla prima la risposta',
     'paste-offer': 'Incolla prima il codice del mittente',
-    'waiting-': "In attesa… inserisci questo codice sull'altro telefono.",
+    'waiting-peer': "In attesa… inserisci questo codice sull'altro telefono.",
     'answer-received': 'Risposta ricevuta, connessione in corso…',
     'answer-invalid': 'Risposta non valida, riprova.',
     'signal-error': 'Server di segnalazione irraggiungibile — usa la modalità manuale.',
-    'rate-limited': 'Servizio di segnalazione sovraccarico. Passaggio automatico alla modalità manuale.',
     'error-prefix': 'Errore',
     'footer-dev': 'Sviluppato da',
     'decomp-unavailable': 'Questo browser non sa decomprimere. Usa un browser più recente.',
@@ -824,18 +752,15 @@ const I18N = {
     'sas-confirm': '✓ Corrispondono',
     'sas-reject': '✗ Differiscono',
     'sas-waiting': 'In attesa di conferma…',
-    'sas-waiting-': "In attesa della conferma dell'altro dispositivo…",
+    'sas-waiting-peer': "In attesa della conferma dell'altro dispositivo…",
     'sas-waiting-you': "L'altro dispositivo ha confermato. Tocca a te.",
     'sas-verified': '✓ Dispositivo verificato',
     'sas-verified-toast': 'Dispositivo verificato — trasferimento sbloccato',
     'sas-rejected-warning': "Codici diversi — possibile tentativo di intercettazione. Sessione terminata.",
-    'sas-rejected-by-': "L'altro dispositivo ha segnalato una differenza — sessione terminata.",
+    'sas-rejected-by-peer': "L'altro dispositivo ha segnalato una differenza — sessione terminata.",
     'sas-error': 'Impossibile calcolare il codice di verifica.',
     'sas-first': 'Verifica prima il dispositivo.',
-    'sas-mismatch': '⚠ I codici di verifica non corrispondono.',
-    'scan-answer-qr': 'Scansiona il QR della risposta',
-    'scan-offer-qr': "Scansiona il QR dell'offerta",
-    'qr-too-big': 'QR troppo grande — usa copia-incolla'
+    'sas-mismatch': '⚠ I codici di verifica non corrispondono.'
   },
   tr: {
     'page-title': 'P2P Transfer — telefonlar arası dosya gönderimi',
@@ -846,10 +771,10 @@ const I18N = {
     'receive-title': 'Dosya al', 'receive-sub': "Diğer telefonun kodunu gir",
     'manual-mode': 'Manuel mod', 'manual-suffix': '(sinyal sunucusu olmadan)',
     'manual-desc': 'Sinyal hizmeti kullanmaz; WebRTC teklifini ve yanıtını elle değiş tokuş et.',
-    'hint-auto': "Dosyalar doğrudan bir cihazdan diğerine gider: hiçbir dosya sunucuda saklanmaz. 6 haneli kod 5 dakika sonra geçersiz olur.",
-    'hint-manual': "<strong>Manuel mod:</strong> hiçbir sinyal sunucusu kullanılmaz. İki kodu kopyala-yapıştır (SMS, mesajlaşma…) veya gösterilen QR kodlarını tarayarak değiştirmen gerekecek. Dosya transferi aynı kalır ve eşler arasıdır.",
+    'hint-auto': "Dosyalar doğrudan bir cihazdan diğerine gider: hiçbir dosya sunucuda saklanmaz. 6 haneli kod 5 dakika sonra geçersiz olur. <strong>Bağlantıdan sonra her iki cihazda bir güvenlik kodu (SAS) gösterilir: araya girme olup olmadığını anlamak için bunları karşılaştır.</strong>",
+    'hint-manual': "<strong>Manuel mod:</strong> hiçbir sinyal sunucusu kullanılmaz. İki kodu kopyala-yapıştır (SMS, mesajlaşma…) ile değiştirmen gerekecek. Dosya transferi aynı kalır ve eşler arasıdır.",
     'pairing-code-label': 'Geçici davet',
-    'pairing-code-hint': 'Kodu kopyala veya QR kodunu tara. Bağlantı otomatik olarak kurulacaktır.',
+    'pairing-code-hint': 'Kodu kopyala veya QR kodunu tara. Ardından iki cihazdaki güvenlik kodunu karşılaştır.',
     'copy': 'Kopyala', 'share': 'Paylaş',
     'preparing': 'Bağlantı hazırlanıyor…',
     'manual-step-1-host': '1 · İletilecek kodun',
@@ -860,7 +785,7 @@ const I18N = {
     'join-label': 'Davet kodu (6 hane)',
     'join-placeholder': '123 456',
     'join-btn': 'Bağlan', 'searching': 'Aranıyor…',
-    'searching-': 'Diğer telefon aranıyor…',
+    'searching-peer': 'Diğer telefon aranıyor…',
     'offer-received': 'Teklif alındı, anlaşılıyor…',
     'connecting': 'Bağlanıyor…',
     'nego-failed': 'Anlaşma başarısız: ',
@@ -881,13 +806,13 @@ const I18N = {
     'connect-first': 'Önce bir cihaza bağlan',
     'clear-confirm': 'Liste temizlensin mi? Bellekteki dosyalar BU cihazda VE diğer cihazda silinecek (indirilmiş dosyalar diskte kalır).',
     'clear-busy': 'Listeyi temizlemeden önce devam eden transferin bitmesini bekle.',
-    'list-cleared-by-': 'Diğer cihaz listeyi temizledi.',
+    'list-cleared-by-peer': 'Diğer cihaz listeyi temizledi.',
     'enter-pairing-code': '6 haneli kodu gir',
     'code-expired': 'Kodun süresi doldu. Diğer cihazdan yeni kod iste.',
     'crypto-required': 'Bu tarayıcıda güvenli rastgele sayı üreteci yok. Güncelle.',
     'eta': '{time} kaldı',
     'hashing': 'Parmak izi hesaplanıyor',
-    'scan-qr': '📷 QR kodu tara', 'scan-hint': 'Kamerayı QR koduna doğrult.', 'close': 'Kapat', 'camera-unavailable': 'Kamera kullanılamıyor: ',
+    'scan-qr': '📷 QR kodu tara', 'scan-hint': 'Kamerayı gönderenin QR koduna doğrult.', 'close': 'Kapat', 'camera-unavailable': 'Kamera kullanılamıyor: ',
     'theme-auto': 'Tema: otomatik', 'theme-dark': 'Tema: koyu', 'theme-light': 'Tema: açık',
     'lang-changed': 'Dil: Türkçe',
     'lang-label': 'Dil: Türkçe — değiştirmek için tıkla',
@@ -909,11 +834,10 @@ const I18N = {
     'code-invalid': 'Geçersiz kod: ',
     'paste-answer': 'Önce yanıtı yapıştır',
     'paste-offer': 'Önce gönderenin kodunu yapıştır',
-    'waiting-': 'Bekleniyor… bu kodu diğer telefona gir.',
+    'waiting-peer': 'Bekleniyor… bu kodu diğer telefona gir.',
     'answer-received': 'Yanıt alındı, bağlanıyor…',
     'answer-invalid': 'Geçersiz yanıt, tekrar dene.',
     'signal-error': 'Sinyal sunucusuna ulaşılamıyor — manuel modu kullan.',
-    'rate-limited': 'Sinyal hizmeti aşırı yüklendi. Otomatik olarak manuel moda geçiliyor.',
     'error-prefix': 'Hata',
     'footer-dev': 'Geliştiren:',
     'decomp-unavailable': 'Bu tarayıcı açmayı bilmiyor. Daha yeni bir tarayıcı kullan.',
@@ -926,18 +850,15 @@ const I18N = {
     'sas-confirm': '✓ Aynılar',
     'sas-reject': '✗ Farklılar',
     'sas-waiting': 'Onay bekleniyor…',
-    'sas-waiting-': 'Diğer cihazın onayı bekleniyor…',
+    'sas-waiting-peer': 'Diğer cihazın onayı bekleniyor…',
     'sas-waiting-you': 'Diğer cihaz onayladı. Sıra sende.',
     'sas-verified': '✓ Cihaz doğrulandı',
     'sas-verified-toast': 'Cihaz doğrulandı — transfer açıldı',
     'sas-rejected-warning': 'Kodlar farklı — olası araya girme girişimi. Oturum kapatıldı.',
-    'sas-rejected-by-': 'Diğer cihaz farklılık bildirdi — oturum kapatıldı.',
+    'sas-rejected-by-peer': 'Diğer cihaz farklılık bildirdi — oturum kapatıldı.',
     'sas-error': 'Doğrulama kodu hesaplanamadı.',
     'sas-first': 'Önce cihazı doğrula.',
-    'sas-mismatch': '⚠ Doğrulama kodları eşleşmiyor.',
-    'scan-answer-qr': 'Yanıt QR kodunu tara',
-    'scan-offer-qr': 'Teklif QR kodunu tara',
-    'qr-too-big': 'QR çok büyük — kopyala-yapıştır kullan'
+    'sas-mismatch': '⚠ Doğrulama kodları eşleşmiyor.'
   }
 };
 
@@ -994,11 +915,7 @@ function applyI18n(){
   });
 
   const h1 = $('#h1-title');
-  if (h1) {
-    h1.innerHTML =
-      '<img class="h1-logo" src="' + LOGO_URL + '" alt="" width="32" height="32" loading="eager" decoding="async" />' +
-      '<span>' + t('h1-html') + '</span>';
-  }
+  if (h1) h1.innerHTML = t('h1-html');
 
   const drop = $('#drop-overlay');
   if (drop) drop.textContent = '📥 ' + t('drop-to-send');
@@ -1027,7 +944,7 @@ function updateMetaThemeColor(){
   const attr = document.documentElement.getAttribute('data-theme');
   const sysLight = window.matchMedia('(prefers-color-scheme: light)').matches;
   const isLight = attr === 'light' || (attr !== 'dark' && sysLight);
-  meta.content = isLight ? '#f5efe0' : '#0a0a0a';
+  meta.content = isLight ? '#f5efe0' : '#0a0e14';
 }
 function applyTheme(pref){
   if (pref === 'auto'){
@@ -1136,6 +1053,7 @@ function makePairingCode(){
   if (!window.crypto || typeof crypto.getRandomValues !== 'function'){
     throw new Error(t('crypto-required'));
   }
+  // Distribution uniforme sur [0, 999999]
   const buf = new Uint32Array(1);
   const limit = Math.floor(0x100000000 / 1000000) * 1000000;
   let n;
@@ -1153,7 +1071,10 @@ function normalizePairingCode(raw){
   return (raw || '').replace(/\D/g, '').slice(0, 6);
 }
 
-/* ============ SAS ============ */
+/* ============ SAS : Short Authentication String ============
+   Comparaison des empreintes DTLS locales et distantes.
+   Si un attaquant MITM, ses empreintes diffèrent côté pair
+   → les SAS diffèrent → détection visuelle par les utilisateurs. */
 function extractFingerprint(sdp){
   if (!sdp) return '';
   const m = sdp.match(/a=fingerprint:sha-256 ([0-9A-Fa-f:]+)/);
@@ -1237,29 +1158,12 @@ function clearFileListUI(opts){
     st.ui = null;
   });
   if (opts.wipeStore){
+    // Libération mémoire complète (chunks + blobs + mapping nid→key)
     store.forEach(st => { st.chunks = []; st.blob = null; st.bytes = 0; });
     store.clear();
     nidMap.clear();
   }
   $('#file-list').innerHTML = '';
-}
-
-function renderQrPayload(container, payload){
-  if (!container) return false;
-  if (!payload){ container.innerHTML = ''; container.hidden = true; return false; }
-  if (typeof qrcode === 'undefined'){ container.hidden = true; return false; }
-  try {
-    const qr = qrcode(0, 'L');
-    qr.addData(payload);
-    qr.make();
-    container.innerHTML = qr.createImgTag(4, 4);
-    container.hidden = false;
-    return true;
-  } catch (e) {
-    container.innerHTML = '';
-    container.hidden = true;
-    return false;
-  }
 }
 
 /* ============================================================
@@ -1340,7 +1244,7 @@ async function hashBlobWorker(blob, onProgress) {
 }
 
 /* ============================================================
-   3. Config réseau
+   3. Config réseau — 6 chiffres
    ============================================================ */
 const ICE_CONFIG = {
   iceServers: [
@@ -1349,15 +1253,9 @@ const ICE_CONFIG = {
     { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
   ]
 };
+const NTFY = 'https://ntfy.sh/';
 const TOPIC_PREFIX = 'ftx7q-';
-const PAIRING_TTL = 15 * 60 * 1000; // 15 min
-
-const PEERJS_CONFIG = {
-  host: '0.peerjs.com', // Serveur public
-  port: 443,
-  path: '/',
-  secure: true
-};
+const PAIRING_TTL = 5 * 60 * 1000; // 5 min
 
 /* ============================================================
    4. État global
@@ -1366,12 +1264,12 @@ const CHUNK = 16 * 1024;
 const HIGH_WATER = 8 * 1024 * 1024;
 const LOW_WATER  = 1 * 1024 * 1024;
 
-let pc = null, dc = null;
-let peer = null, peerConnection = null;
-let mode = 'auto';
+let pc = null, dc = null, es = null;
+let mode = 'ntfy';
 let role = null;
 let pairingCode = '';
 let sessionStart = 0;
+let offerTimer = null;
 let joinedOnce = false;
 let nidSeq = 0;
 
@@ -1388,8 +1286,7 @@ let sessionTimer = null, sessionStartTime = 0;
 let pairingTimer = null;
 let pingTimer = null, currentRtt = null;
 
-let connectedOnce = false;
-
+/* --- SAS --- */
 let sasCode = '';
 let sasSelfConfirmed = false;
 let sasPeerConfirmed = false;
@@ -1449,7 +1346,7 @@ function addCancelAction(handle, onCancel){
 }
 
 /* ============================================================
-   6. WebRTC (Mode manuel uniquement)
+   6. WebRTC
    ============================================================ */
 function wirePC(){
   pc.onconnectionstatechange = () => {
@@ -1461,7 +1358,7 @@ function wirePC(){
 function waitIce(){
   return new Promise(resolve => {
     if (pc.iceGatheringState === 'complete') return resolve();
-    const timer = setTimeout(done, 9000);
+    const timer = setTimeout(done, 6000);
     function check(){ if (pc.iceGatheringState === 'complete') done(); }
     function done(){
       clearTimeout(timer);
@@ -1815,36 +1712,26 @@ function queueFiles(files){
 }
 
 /* ============================================================
-   9. Signalisation via PeerJS (Mode auto)
+   9. Signalisation — sans HMAC (6 chiffres trop faibles)
+   La sécurité est assurée par le SAS post-connexion.
    ============================================================ */
-async function fallbackToManualHost(reason){
-  if (mode === 'manual') return;
-  if (connectedOnce) return;
-  mode = 'manual';
-
-  if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (peer) { peer.destroy(); peer = null; }
-
-  const chk = $('#chk-manual');
-  if (chk) chk.checked = true;
-
-  const info = $('#auto-pairing-info');
-  const manual = $('#host-manual');
-  if (info) info.hidden = true;
-  if (manual) manual.hidden = false;
-
-  try {
-    if (!pc) {
-      const sdp = await createOfferSDP();
-      const packed = await packSDP(sdp);
-      $('#host-offer').value = packed;
-      const ok = renderQrPayload($('#host-offer-qr'), packed);
-      if (!ok) toast(t('qr-too-big'));
-    }
-  } catch(_){}
-
-  setHostStatus(t(reason), 'err');
-  toast(t(reason));
+function subscribe(topic, onMsg, onFail){
+  const src = new EventSource(NTFY + topic + '/sse');
+  let errors = 0;
+  src.onopen = () => { errors = 0; };
+  src.onmessage = ev => {
+    try{
+      const d = JSON.parse(ev.data);
+      if (d.event !== 'message') return;
+      onMsg(JSON.parse(d.message));
+    }catch(_){}
+  };
+  src.onerror = () => { if (++errors >= 4 && onFail) onFail(); };
+  return src;
+}
+async function publish(topic, payload){
+  const response = await fetch(NTFY + topic, { method: 'POST', body: JSON.stringify(payload) });
+  if (!response.ok) throw new Error('Signalisation HTTP ' + response.status);
 }
 
 /* ============================================================
@@ -1862,8 +1749,6 @@ async function startHost(){
   $('#host-manual').hidden = (mode !== 'manual');
   $('#host-offer').value = '';
   $('#host-answer-in').value = '';
-  const hostOfferQr = $('#host-offer-qr');
-  if (hostOfferQr){ hostOfferQr.innerHTML = ''; hostOfferQr.hidden = true; }
   clearFileListUI();
   setHostStatus(t('preparing'), 'spin');
   showView('v-host');
@@ -1871,52 +1756,38 @@ async function startHost(){
   generateQR(pairingCode);
   if (mode !== 'manual') pairingTimer = setTimeout(expirePairing, PAIRING_TTL);
 
-  if (mode === 'manual') {
-    let sdp;
-    try {
-      sdp = await createOfferSDP();
-    } catch(e){
-      setHostStatus(t('error-prefix') + ' : ' + e.message, 'err');
-      return;
+  try{
+    const sdp = await createOfferSDP();
+
+    if (mode === 'manual'){
+      $('#host-offer').value = await packSDP(sdp);
+      setHostStatus(t('manual-step-2-host'), '');
+    }else{
+      const topic = TOPIC_PREFIX + pairingCode;
+      es = subscribe(topic, async msg => {
+        if (msg.t !== 'answer') return;
+        if (!Number.isFinite(msg.ts) || Math.abs(Date.now() - msg.ts) > PAIRING_TTL) return;
+        if (!pc || pc.signalingState !== 'have-local-offer') return;
+        clearInterval(offerTimer); offerTimer = null;
+        try{
+          await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
+          setHostStatus(t('answer-received'), 'spin');
+        }catch(e){
+          setHostStatus(t('answer-invalid'), 'err');
+        }
+      }, () => setHostStatus(t('signal-error'), 'err'));
+
+      const pub = async () => {
+        try { await publish(topic, { t: 'offer', sdp, ts: Date.now() }); }
+        catch(_) { setHostStatus(t('signal-error'), 'err'); }
+      };
+      pub();
+      offerTimer = setInterval(pub, 5000);
+      setHostStatus(t('waiting-peer'), 'spin');
     }
-    try {
-      const packed = await packSDP(sdp);
-      $('#host-offer').value = packed;
-      const ok = renderQrPayload($('#host-offer-qr'), packed);
-      if (!ok) toast(t('qr-too-big'));
-    } catch(_){}
-    setHostStatus(t('manual-step-2-host'), '');
-    return;
+  }catch(e){
+    setHostStatus(t('error-prefix') + ' : ' + e.message, 'err');
   }
-
-  // --- Mode auto (PeerJS) ---
-  const roomId = TOPIC_PREFIX + pairingCode;
-  
-  peer = new Peer(roomId, PEERJS_CONFIG); // Utilisation de VOTRE serveur
-
-  peer.on('open', (id) => {
-    setHostStatus(t('waiting-peer'), 'spin');
-  });
-
-  peer.on('connection', (conn) => {
-    peerConnection = conn;
-    const dataChannel = conn.dataChannel || conn._dc;
-    if (dataChannel) {
-      setupChannel(dataChannel);
-    } else {
-      onFatal("Erreur de connexion interne : DataChannel introuvable.");
-    }
-  });
-
-  peer.on('error', (err) => {
-    console.error('PeerJS Error:', err);
-    if (err.type === 'unavailable-id') {
-      toast("Ce code est déjà utilisé. Veuillez réessayer.");
-      goHome();
-    } else {
-      fallbackToManualHost('signal-error');
-    }
-  });
 }
 
 function setHostStatus(text, kind){
@@ -1929,7 +1800,8 @@ function setHostStatus(text, kind){
 function expirePairing(){
   pairingTimer = null;
   if (connectedOnce) return;
-  if (peer) { peer.destroy(); peer = null; }
+  if (offerTimer) { clearInterval(offerTimer); offerTimer = null; }
+  if (es) { try { es.close(); } catch(_){} es = null; }
   if (role === 'host') setHostStatus(t('code-expired'), 'err');
   if (role === 'join'){
     const st = $('#join-status');
@@ -1981,36 +1853,34 @@ async function joinWithCode(){
   const topic = TOPIC_PREFIX + code;
   pairingTimer = setTimeout(() => {
     if (role !== 'join' || connectedOnce) return;
-    if (peer) { peer.destroy(); peer = null; }
+    if (es) { es.close(); es = null; }
     st.className = 'status err';
     st.textContent = t('code-expired');
   }, PAIRING_TTL);
 
-  peer = new Peer(null, PEERJS_CONFIG); // Utilisation de VOTRE serveur
+  es = subscribe(topic, async msg => {
+    if (msg.t !== 'offer') return;
+    if (joinedOnce) return;
+    if (!Number.isFinite(msg.ts) || Math.abs(Date.now() - msg.ts) > PAIRING_TTL) return;
+    joinedOnce = true;
 
-  peer.on('open', () => {
-    const conn = peer.connect(topic, { reliable: true });
-    peerConnection = conn;
+    st.innerHTML = '<span class="spinner"></span><span></span>';
+    st.lastChild.textContent = t('offer-received');
 
-    conn.on('open', () => {
-      const dataChannel = conn.dataChannel || conn._dc;
-      if (dataChannel) {
-        setupChannel(dataChannel);
-      } else {
-        st.className = 'status err';
-        st.textContent = "Erreur : DataChannel introuvable.";
+    try{
+      const answerSdp = await createAnswerSDP(msg.sdp);
+      for (let i = 0; i < 3; i++){
+        publish(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() }).catch(() => {});
+        await new Promise(r => setTimeout(r, 400));
       }
-    });
-
-    conn.on('error', (err) => {
-      console.error('Connection Error:', err);
+      if (es) { es.close(); es = null; }
+      st.innerHTML = '<span class="spinner"></span><span></span>';
+      st.lastChild.textContent = t('connecting');
+    }catch(e){
       st.className = 'status err';
-      st.textContent = t('signal-error');
-    });
-  });
-
-  peer.on('error', (err) => {
-    console.error('PeerJS Error:', err);
+      st.textContent = t('nego-failed') + e.message;
+    }
+  }, () => {
     st.className = 'status err';
     st.textContent = t('signal-error');
   });
@@ -2020,7 +1890,7 @@ function checkDeepLink(){
   const hash = location.hash;
   const m = hash.match(/#join=(\d{6})/);
   if (!m) return;
-  mode = 'auto';
+  mode = 'ntfy';
   $('#chk-manual').checked = false;
   $('#join-code-card').hidden = false;
   $('#join-manual').hidden = true;
@@ -2049,10 +1919,7 @@ async function manualJoinGenerate(){
   try{
     const offerSdp = await unpackSDP(raw);
     const answerSdp = await createAnswerSDP(offerSdp);
-    const packed = await packSDP(answerSdp);
-    $('#join-answer-out').value = packed;
-    const ok = renderQrPayload($('#join-answer-qr'), packed);
-    if (!ok) toast(t('qr-too-big'));
+    $('#join-answer-out').value = await packSDP(answerSdp);
     $('#join-answer-box').hidden = false;
     $('#join-status').hidden = false;
     $('#join-status').className = 'status';
@@ -2066,11 +1933,15 @@ async function manualJoinGenerate(){
 /* ============================================================
    13. États de connexion + SAS
    ============================================================ */
+let connectedOnce = false;
+
 async function onConnected(){
   if (connectedOnce) return;
   connectedOnce = true;
 
+  if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
+  if (es){ es.close(); es = null; }
 
   statePromise = new Promise(resolve => {
     stateResolve = resolve;
@@ -2093,19 +1964,12 @@ async function onConnected(){
 
   showView('v-main');
 
+  // --- SAS ---
   sasSelfConfirmed = false;
   sasPeerConfirmed = false;
   sasVerified = false;
   sasRejected = false;
   sasCode = '';
-
-  if (mode === 'auto') {
-    sasVerified = true;
-    $('#btn-pick').disabled = false;
-    const card = $('#sas-card');
-    if (card) card.hidden = true;
-    return;
-  }
 
   const sas = await computeSAS();
   if (sasRejected) return;
@@ -2131,6 +1995,7 @@ function updateSasUI(){
   const rejectBtn  = $('#btn-sas-reject');
   const codeEl     = $('#sas-code');
 
+  // Bouton ✓
   if (sasSelfConfirmed){
     confirmBtn.disabled = true;
     confirmBtn.textContent = '✓';
@@ -2139,6 +2004,7 @@ function updateSasUI(){
     confirmBtn.textContent = t('sas-confirm');
   }
 
+  // Bouton ✗
   rejectBtn.disabled = sasRejected;
 
   if (sasRejected){
@@ -2203,6 +2069,7 @@ function checkSasVerified(){
   if (sasSelfConfirmed && sasPeerConfirmed && !sasVerified){
     sasVerified = true;
     $('#btn-pick').disabled = false;
+    // Mettre à jour le statut global
     const cs = $('#conn-status');
     if (cs){
       cs.className = 'status ok';
@@ -2214,6 +2081,8 @@ function checkSasVerified(){
     updateSasUI();
     toast(t('sas-verified-toast'));
     vibrate(30);
+    
+    // Cacher la carte SAS IMMÉDIATEMENT
     const card = $('#sas-card');
     if (card) card.hidden = true;
   }
@@ -2222,8 +2091,11 @@ function checkSasVerified(){
 function handleSasRejection(message){
   sasRejected = true;
   $('#btn-pick').disabled = true;
+
+  // Purge les fichiers d'une session rejetée (peut être un MITM)
   clearFileListUI({ wipeStore: true });
 
+  // UI
   const codeEl = $('#sas-code');
   if (codeEl) codeEl.classList.add('mismatch');
   const statusEl = $('#sas-status');
@@ -2245,17 +2117,19 @@ function handleSasRejection(message){
   if (rejectBtn)  rejectBtn.disabled  = true;
 
   toast(message);
-  vibrate([50, 100, 50, 100, 50]);
+  vibrate([50, 50, 50, 50, 50]);
 
+  // Fermer la connexion sans déclencher onFatal
   if (dc){ try { dc.close(); } catch(_){} dc = null; }
   if (pc){ try { pc.close(); } catch(_){} pc = null; }
 }
 
 function onFatal(message){
-  if (sasRejected) return;
+  if (sasRejected) return; // déjà géré
 
+  if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (peer) { peer.destroy(); peer = null; }
+  if (es){ es.close(); es = null; }
   stopPing(); stopSessionTimer();
 
   const cs = $('#conn-status');
@@ -2270,9 +2144,9 @@ function onFatal(message){
 }
 
 function cleanup(){
+  if (offerTimer){ clearInterval(offerTimer); offerTimer = null; }
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
-  peerConnection = null;
+  if (es){ try { es.close(); } catch(e){} es = null; }
   if (dc){ const d = dc; dc = null; try { d.close(); } catch(e){} }
   if (pc){ const p = pc; pc = null; try { p.close(); } catch(e){} }
   stopQRScanner();
@@ -2288,6 +2162,7 @@ function cleanup(){
   queue = [];
   busy = false;
 
+  // SAS
   sasCode = '';
   sasSelfConfirmed = false;
   sasPeerConfirmed = false;
@@ -2308,11 +2183,6 @@ function cleanup(){
 
   const stats = $('#stats');
   if (stats) stats.hidden = true;
-
-  const hostOfferQr = $('#host-offer-qr');
-  if (hostOfferQr){ hostOfferQr.innerHTML = ''; hostOfferQr.hidden = true; }
-  const joinAnswerQr = $('#join-answer-qr');
-  if (joinAnswerQr){ joinAnswerQr.innerHTML = ''; joinAnswerQr.hidden = true; }
 }
 
 function goHome(){
@@ -2330,6 +2200,7 @@ function startPing(){
     if (!dc || dc.readyState !== 'open') return;
     try { dc.send(JSON.stringify({ t: 'ping', ts: performance.now() })); } catch(e){}
   };
+  // Attendre 1 seconde pour être sûr que le canal est prêt
   setTimeout(() => {
     sendPing();
     pingTimer = setInterval(sendPing, 5000);
@@ -2437,7 +2308,7 @@ document.addEventListener('pointerdown', e => {
 });
 
 $('#chk-manual').onchange = e => {
-  mode = e.target.checked ? 'manual' : 'auto';
+  mode = e.target.checked ? 'manual' : 'ntfy';
   $('#hint-home').innerHTML = t(mode === 'manual' ? 'hint-manual' : 'hint-auto');
 };
 
@@ -2450,8 +2321,6 @@ $('#btn-receive').onclick = () => {
   $('#join-answer-box').hidden = true;
   $('#join-offer-in').value = '';
   $('#join-answer-out').value = '';
-  const joinQr = $('#join-answer-qr');
-  if (joinQr){ joinQr.innerHTML = ''; joinQr.hidden = true; }
   showView('v-join');
   if (!manual) setTimeout(() => $('#join-code').focus(), 150);
 };
@@ -2508,6 +2377,7 @@ $('#btn-copy-answer').onclick  = () => copyField($('#join-answer-out')).then(() 
 $('#btn-host-connect').onclick = manualHostConnect;
 $('#btn-join-gen').onclick     = manualJoinGenerate;
 
+/* SAS buttons */
 $('#btn-sas-confirm').onclick = onSasSelfConfirm;
 $('#btn-sas-reject').onclick  = onSasSelfReject;
 
@@ -2518,7 +2388,7 @@ let qrScannerStream = null;
 let qrScanInterval = null;
 let qrScannerActive = false;
 
-async function startQRScan(onResult){
+$('#btn-scan-qr').onclick = async () => {
   const box = $('#qr-scanner-box');
   const video = $('#qr-scanner-video');
   box.hidden = false;
@@ -2564,7 +2434,14 @@ async function startQRScan(onResult){
 
       if (code) {
         stopQRScanner();
-        onResult(code);
+        const m = code.match(/#join=(\d{6})/);
+        const found = m ? m[1] : (code.match(/\d{6}/) || [])[0];
+        if (found) {
+          $('#join-code').value = found;
+          joinWithCode();
+        } else {
+          toast(t('code-invalid') + code);
+        }
         return;
       }
 
@@ -2577,28 +2454,7 @@ async function startQRScan(onResult){
     toast(t('camera-unavailable') + e.message);
     box.hidden = true;
   }
-}
-
-$('#btn-scan-qr').onclick = () => startQRScan(code => {
-  const m = code.match(/#join=(\d{6})/);
-  const found = m ? m[1] : (code.match(/\d{6}/) || [])[0];
-  if (found) {
-    $('#join-code').value = found;
-    joinWithCode();
-  } else {
-    toast(t('code-invalid') + code);
-  }
-});
-
-$('#btn-scan-answer-qr').onclick = () => startQRScan(async payload => {
-  $('#host-answer-in').value = payload;
-  await manualHostConnect();
-});
-
-$('#btn-scan-offer-qr').onclick = () => startQRScan(async payload => {
-  $('#join-offer-in').value = payload;
-  await manualJoinGenerate();
-});
+};
 
 $('#btn-close-scanner').onclick = stopQRScanner;
 
@@ -2631,7 +2487,6 @@ window.addEventListener('keydown', e => {
   if (e.key === 'Escape'){
     const menu = $('#lang-menu');
     if (menu && !menu.hidden){ closeLangMenu(); return; }
-    if (qrScannerActive){ stopQRScanner(); return; }
     const active = $('.view.active');
     if (active && active.id !== 'v-home') goHome();
   }
@@ -2639,7 +2494,7 @@ window.addEventListener('keydown', e => {
 
 let dragCount = 0;
 window.addEventListener('dragenter', e => {
-  if (!sasVerified) return;
+  if (!dc || dc.readyState !== 'open' || !sasVerified) return;
   e.preventDefault();
   dragCount++;
   document.body.classList.add('dragging');
@@ -2653,6 +2508,7 @@ window.addEventListener('drop', e => {
   e.preventDefault();
   dragCount = 0;
   document.body.classList.remove('dragging');
+  if (!dc || dc.readyState !== 'open'){ toast(t('connect-first')); return; }
   if (!sasVerified){ toast(t('sas-first')); return; }
   const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
   if (files.length) queueFiles(files);

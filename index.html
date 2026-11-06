@@ -8,7 +8,7 @@
 <meta name="description" content="Transfère tes fichiers directement entre appareils avec WebRTC. Aucun fichier n'est stocké sur un serveur." />
 <title>Transfert P2P — envoi de fichiers entre téléphones</title>
 
- <link rel="manifest" href="transfert.webmanifest" />
+<link rel="manifest" href="transfert.webmanifest" />
 
 <!-- ====== FAVICON / ICÔNE DE L'APPLICATION ====== -->
 <link rel="icon" type="image/png" sizes="any" href="https://cdn.jsdelivr.net/gh/Bstudio136/TransfertP2P@main/p2p.png" />
@@ -19,7 +19,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-<!-- Intégration de PeerJS pour la signalisation -->
+<!-- Intégration de PeerJS -->
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
 <style>
@@ -540,7 +540,7 @@ const I18N = {
     'receive-title': 'Recevoir des fichiers', 'receive-sub': "Saisis le code de l'autre téléphone",
     'manual-mode': 'Mode manuel', 'manual-suffix': '(sans serveur de signalisation)',
     'manual-desc': "Pas de serveur de signalisation ; échange manuel de l'offre et de la réponse WebRTC.",
-    'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique utilise le broker public PeerJS pour une connexion fiable. Le code à 6 chiffres expire après 5 minutes.",
+    'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique utilise votre serveur PeerJS dédié pour une connexion fiable. Le code à 6 chiffres expire après 5 minutes.",
     'hint-manual': "<strong>Mode manuel :</strong> aucun serveur de signalisation n'est utilisé. Tu devras échanger deux codes par copier-coller (SMS, messagerie…) ou en scannant les QR codes affichés. Le transfert des fichiers reste identique et pair-à-pair.",
     'pairing-code-label': "Code d'invitation",
     'pairing-code-hint': "Copie le code ou scanne le QR. La connexion se fera automatiquement.",
@@ -642,7 +642,7 @@ const I18N = {
     'receive-title': 'Receive files', 'receive-sub': "Enter the other phone's code",
     'manual-mode': 'Manual mode', 'manual-suffix': '(no signaling server)',
     'manual-desc': 'No signaling service; manually exchange the WebRTC offer and answer.',
-    'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing uses the public PeerJS broker for a reliable connection. The 6-digit code expires after 5 minutes.",
+    'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing uses your dedicated PeerJS server for a reliable connection. The 6-digit code expires after 5 minutes.",
     'hint-manual': "<strong>Manual mode:</strong> no signaling server is used. You will have to exchange two codes via copy/paste (SMS, messaging…) or by scanning the displayed QR codes. File transfer remains identical and peer-to-peer.",
     'pairing-code-label': 'Temporary invitation',
     'pairing-code-hint': 'Copy the code or scan its QR. The connection will happen automatically.',
@@ -1352,6 +1352,14 @@ const ICE_CONFIG = {
 const TOPIC_PREFIX = 'ftx7q-';
 const PAIRING_TTL = 15 * 60 * 1000; // 15 min
 
+// ⚠️ CONFIGURATION DE VOTRE SERVEUR CLOUDFLARE
+const PEERJS_CONFIG = {
+  host: 'little-moon-f636.sbavalux121.workers.dev', 
+  port: 443,
+  path: '/peerjs',
+  secure: true
+};
+
 /* ============================================================
    4. État global
    ============================================================ */
@@ -1826,7 +1834,6 @@ async function fallbackToManualHost(reason){
   if (info) info.hidden = true;
   if (manual) manual.hidden = false;
 
-  // Générer l'offre manuellement si ce n'est pas déjà fait
   try {
     if (!pc) {
       const sdp = await createOfferSDP();
@@ -1886,7 +1893,7 @@ async function startHost(){
   // --- Mode auto (PeerJS) ---
   const roomId = TOPIC_PREFIX + pairingCode;
   
-  peer = new Peer(roomId);
+  peer = new Peer(roomId, PEERJS_CONFIG); // Utilisation de VOTRE serveur
 
   peer.on('open', (id) => {
     setHostStatus(t('waiting-peer'), 'spin');
@@ -1894,7 +1901,6 @@ async function startHost(){
 
   peer.on('connection', (conn) => {
     peerConnection = conn;
-    // Extraction du DataChannel natif pour utiliser la logique existante
     const dataChannel = conn.dataChannel || conn._dc;
     if (dataChannel) {
       setupChannel(dataChannel);
@@ -1981,7 +1987,7 @@ async function joinWithCode(){
     st.textContent = t('code-expired');
   }, PAIRING_TTL);
 
-  peer = new Peer(); // ID aléatoire pour le récepteur
+  peer = new Peer(null, PEERJS_CONFIG); // Utilisation de VOTRE serveur
 
   peer.on('open', () => {
     const conn = peer.connect(topic, { reliable: true });

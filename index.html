@@ -19,8 +19,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-<!-- Ajout de la bibliothèque MQTT pour remplacer ntfy.sh -->
-<script src="https://unpkg.com/mqtt@5.3.5/dist/mqtt.min.js"></script>
+
+<!-- Intégration de Trystero pour une signalisation fiable sans serveur -->
+<script type="module">
+  import { joinRoom } from 'https://esm.sh/trystero';
+  window.Trystero = { joinRoom };
+</script>
 
 <style>
   *,*::before,*::after{box-sizing:border-box}
@@ -320,7 +324,6 @@
   .scanner-box{text-align:center;padding:12px;}
   .scanner-box video{max-height:50vh;object-fit:cover;}
 
-  /* ===== AJOUT QR MANUEL : overlay scanner (déplacé hors des vues) ===== */
   .qr-overlay{
     position:fixed;inset:0;z-index:95;
     background:rgba(0,0,0,.82);
@@ -418,7 +421,6 @@
        <div class="status" id="host-status" role="status" aria-live="polite"><span class="spinner"></span><span data-i18n="preparing">Préparation…</span></div>
     </div>
 
-    <!-- ===== AJOUT QR MANUEL : QR d'offre + scan de réponse ===== -->
     <div id="host-manual" hidden>
       <label data-i18n="manual-step-1-host">1 · Ton code à transmettre</label>
       <textarea id="host-offer" readonly placeholder="…"></textarea>
@@ -430,7 +432,6 @@
       <button class="btn ghost" id="btn-scan-answer-qr" style="margin-top:8px" type="button">📷 <span data-i18n="scan-answer-qr">Scanner la réponse QR</span></button>
       <button class="btn primary" id="btn-host-connect" style="margin-top:12px" data-i18n="connect">Connecter</button>
     </div>
-    <!-- ===== FIN AJOUT ===== -->
 
     <button class="btn ghost" id="btn-cancel-host" data-i18n="cancel">Annuler</button>
   </section>
@@ -446,7 +447,6 @@
       <div class="status" id="join-status" role="status" aria-live="polite" hidden><span class="spinner"></span><span data-i18n="searching">Recherche…</span></div>
     </div>
 
-    <!-- ===== AJOUT QR MANUEL : QR de réponse + scan d'offre ===== -->
     <div id="join-manual" hidden>
       <label data-i18n="manual-step-1-join">1 · Colle le code de l'autre téléphone</label>
       <textarea id="join-offer-in" data-i18n-placeholder="offer-placeholder" placeholder="Colle ici le code de l'expéditeur…"></textarea>
@@ -460,7 +460,6 @@
         <button class="btn ghost" id="btn-copy-answer" style="margin-top:8px">📋 <span data-i18n="copy-answer">Copier la réponse</span></button>
       </div>
     </div>
-    <!-- ===== FIN AJOUT ===== -->
 
     <button class="btn ghost" id="btn-cancel-join" data-i18n="back">Retour</button>
   </section>
@@ -509,7 +508,6 @@
 
 </div>
 
-<!-- ===== AJOUT QR MANUEL : scanner déplacé en overlay global ===== -->
 <div id="qr-scanner-box" class="qr-overlay" hidden>
   <div class="card scanner-box">
     <video id="qr-scanner-video" playsinline muted></video>
@@ -517,7 +515,6 @@
     <button class="btn ghost" id="btn-close-scanner" type="button" data-i18n="close">Fermer</button>
   </div>
 </div>
-<!-- ===== FIN AJOUT ===== -->
 
 <footer class="footer">
   <span data-i18n="footer-dev">Développé par</span>
@@ -527,8 +524,13 @@
 <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
-(function(){
+(async function(){
 'use strict';
+
+// Attendre que Trystero soit chargé
+while (!window.Trystero) {
+  await new Promise(r => setTimeout(r, 50));
+}
 
 /* ============================================================
    0. i18n — FR / EN / IT / TR
@@ -547,10 +549,10 @@ const I18N = {
     'receive-title': 'Recevoir des fichiers', 'receive-sub': "Saisis le code de l'autre téléphone",
     'manual-mode': 'Mode manuel', 'manual-suffix': '(sans serveur de signalisation)',
     'manual-desc': "Pas de serveur de signalisation ; échange manuel de l'offre et de la réponse WebRTC.",
-    'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique utilise un serveur MQTT public pour les informations temporaires nécessaires à WebRTC. Le code à 6 chiffres expire après 5 minutes. <strong>Après connexion, un code de sécurité (SAS) est affiché sur les deux appareils : compare-les pour détecter une éventuelle interception.</strong>",
+    'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique utilise le réseau décentralisé Nostr (via Trystero) pour une connexion fiable. Le code à 6 chiffres expire après 5 minutes.",
     'hint-manual': "<strong>Mode manuel :</strong> aucun serveur de signalisation n'est utilisé. Tu devras échanger deux codes par copier-coller (SMS, messagerie…) ou en scannant les QR codes affichés. Le transfert des fichiers reste identique et pair-à-pair.",
     'pairing-code-label': "Code d'invitation",
-    'pairing-code-hint': "Copie le code ou scanne le QR. Vérifie ensuite le code de sécurité affiché sur les deux appareils.",
+    'pairing-code-hint': "Copie le code ou scanne le QR. La connexion se fera automatiquement.",
     'copy': 'Copier', 'share': 'Partager',
     'preparing': 'Préparation de la connexion…',
     'manual-step-1-host': '1 · Ton code à transmettre',
@@ -649,10 +651,10 @@ const I18N = {
     'receive-title': 'Receive files', 'receive-sub': "Enter the other phone's code",
     'manual-mode': 'Manual mode', 'manual-suffix': '(no signaling server)',
     'manual-desc': 'No signaling service; manually exchange the WebRTC offer and answer.',
-    'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing uses a public MQTT server for temporary WebRTC connection details. The 6-digit code expires after 5 minutes. <strong>After connecting, a security code (SAS) is shown on both devices: compare them to detect interception.</strong>",
+    'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing uses the decentralized Nostr network (via Trystero) for a reliable connection. The 6-digit code expires after 5 minutes.",
     'hint-manual': "<strong>Manual mode:</strong> no signaling server is used. You will have to exchange two codes via copy/paste (SMS, messaging…) or by scanning the displayed QR codes. File transfer remains identical and peer-to-peer.",
     'pairing-code-label': 'Temporary invitation',
-    'pairing-code-hint': 'Copy the code or scan its QR. Then verify the security code on both devices.',
+    'pairing-code-hint': 'Copy the code or scan its QR. The connection will happen automatically.',
     'copy': 'Copy', 'share': 'Share',
     'preparing': 'Preparing connection…',
     'manual-step-1-host': '1 · Your code to transmit',
@@ -751,10 +753,10 @@ const I18N = {
     'receive-title': 'Ricevi file', 'receive-sub': "Inserisci il codice dell'altro telefono",
     'manual-mode': 'Modalità manuale', 'manual-suffix': '(senza server di segnalazione)',
     'manual-desc': 'Nessun servizio di segnalazione; scambia manualmente offerta e risposta WebRTC.',
-    'hint-auto': "I file viaggiano <strong>direttamente</strong> da un dispositivo all'altro: nessun file viene memorizzato su un server. Il codice a 6 cifre scade dopo 5 minuti. <strong>Dopo la connessione, un codice di sicurezza (SAS) viene mostrato su entrambi i dispositivi: confrontali per rilevare un'intercettazione.</strong>",
+    'hint-auto': "I file viaggiano <strong>direttamente</strong> da un dispositivo all'altro: nessun file viene memorizzato su un server. Il codice a 6 cifre scade dopo 5 minuti.",
     'hint-manual': "<strong>Modalità manuale:</strong> nessun server di segnalazione viene utilizzato. Dovrai scambiare due codici tramite copia/incolla (SMS, messaggistica…) o scansionando i QR code visualizzati. Il trasferimento dei file rimane identico e peer-to-peer.",
     'pairing-code-label': 'Invito temporaneo',
-    'pairing-code-hint': 'Copia il codice o scansiona il QR. Verifica poi il codice di sicurezza sui due dispositivi.',
+    'pairing-code-hint': 'Copia il codice o scansiona il QR. La connessione avverrà automaticamente.',
     'copy': 'Copia', 'share': 'Condividi',
     'preparing': 'Preparazione della connessione…',
     'manual-step-1-host': '1 · Il tuo codice da trasmettere',
@@ -853,10 +855,10 @@ const I18N = {
     'receive-title': 'Dosya al', 'receive-sub': "Diğer telefonun kodunu gir",
     'manual-mode': 'Manuel mod', 'manual-suffix': '(sinyal sunucusu olmadan)',
     'manual-desc': 'Sinyal hizmeti kullanmaz; WebRTC teklifini ve yanıtını elle değiş tokuş et.',
-    'hint-auto': "Dosyalar doğrudan bir cihazdan diğerine gider: hiçbir dosya sunucuda saklanmaz. 6 haneli kod 5 dakika sonra geçersiz olur. <strong>Bağlantıdan sonra her iki cihazda bir güvenlik kodu (SAS) gösterilir: araya girme olup olmadığını anlamak için bunları karşılaştır.</strong>",
+    'hint-auto': "Dosyalar doğrudan bir cihazdan diğerine gider: hiçbir dosya sunucuda saklanmaz. 6 haneli kod 5 dakika sonra geçersiz olur.",
     'hint-manual': "<strong>Manuel mod:</strong> hiçbir sinyal sunucusu kullanılmaz. İki kodu kopyala-yapıştır (SMS, mesajlaşma…) veya gösterilen QR kodlarını tarayarak değiştirmen gerekecek. Dosya transferi aynı kalır ve eşler arasıdır.",
     'pairing-code-label': 'Geçici davet',
-    'pairing-code-hint': 'Kodu kopyala veya QR kodunu tara. Ardından iki cihazdaki güvenlik kodunu karşılaştır.',
+    'pairing-code-hint': 'Kodu kopyala veya QR kodunu tara. Bağlantı otomatik olarak kurulacaktır.',
     'copy': 'Kopyala', 'share': 'Paylaş',
     'preparing': 'Bağlantı hazırlanıyor…',
     'manual-step-1-host': '1 · İletilecek kodun',
@@ -1251,13 +1253,11 @@ function clearFileListUI(opts){
   $('#file-list').innerHTML = '';
 }
 
-/* ===== AJOUT QR MANUEL : rendu QR générique ===== */
 function renderQrPayload(container, payload){
   if (!container) return false;
   if (!payload){ container.innerHTML = ''; container.hidden = true; return false; }
   if (typeof qrcode === 'undefined'){ container.hidden = true; return false; }
   try {
-    /* Correction 'L' = capacité max (2953 octets, version 40) */
     const qr = qrcode(0, 'L');
     qr.addData(payload);
     qr.make();
@@ -1270,7 +1270,6 @@ function renderQrPayload(container, payload){
     return false;
   }
 }
-/* ===== FIN AJOUT ===== */
 
 /* ============================================================
    2. Hachage — Web Worker incrémental
@@ -1370,8 +1369,10 @@ const HIGH_WATER = 8 * 1024 * 1024;
 const LOW_WATER  = 1 * 1024 * 1024;
 
 let pc = null, dc = null;
-let mqttClient = null; // Remplace EventSource (es)
-let mode = 'auto'; // 'auto' (MQTT) ou 'manual'
+let trysteroRoom = null;
+let sendControl = null;
+let sendBinary = null;
+let mode = 'auto';
 let role = null;
 let pairingCode = '';
 let sessionStart = 0;
@@ -1452,7 +1453,7 @@ function addCancelAction(handle, onCancel){
 }
 
 /* ============================================================
-   6. WebRTC
+   6. WebRTC (Mode manuel uniquement)
    ============================================================ */
 function wirePC(){
   pc.onconnectionstatechange = () => {
@@ -1496,7 +1497,7 @@ async function createAnswerSDP(offerSdp){
 }
 
 /* ============================================================
-   7. Data channel
+   7. Data channel (Mode manuel)
    ============================================================ */
 function setupChannel(channel){
   dc = channel;
@@ -1524,7 +1525,8 @@ function onControl(raw){
 
   switch (msg.t){
     case 'hello':
-      try { dc.send(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
+      const sendHello = trysteroRoom ? sendControl : dc.send.bind(dc);
+      try { sendHello(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
       break;
     case 'state':
       haveRemote = msg.have || {};
@@ -1538,7 +1540,8 @@ function onControl(raw){
       break;
     case 'list-clear':
       clearFileListUI({ wipeStore: true });
-      try { dc.send(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
+      const sendState = trysteroRoom ? sendControl : dc.send.bind(dc);
+      try { sendState(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
       toast(t('list-cleared-by-peer'));
       break;
     case 'file':
@@ -1562,11 +1565,13 @@ function onControl(raw){
         vibrate(25);
       }
       nidMap.delete(msg.nid);
-      try { dc.send(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
+      const sendState2 = trysteroRoom ? sendControl : dc.send.bind(dc);
+      try { sendState2(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
       break;
     }
     case 'ping':
-      try { dc.send(JSON.stringify({ t: 'pong', ts: msg.ts })); } catch(_){}
+      const sendPong = trysteroRoom ? sendControl : dc.send.bind(dc);
+      try { sendPong(JSON.stringify({ t: 'pong', ts: msg.ts })); } catch(_){}
       break;
     case 'pong':
       currentRtt = performance.now() - msg.ts;
@@ -1689,6 +1694,7 @@ function addDownloadActions(ui, st){
    8. Envoi
    ============================================================ */
 async function waitBuffer(nid){
+  if (trysteroRoom) return; // Trystero gère le buffer
   while (dc && dc.readyState === 'open' && dc.bufferedAmount > HIGH_WATER){
     if (nid != null && cancelled.has(nid)) throw new Error('__CANCELLED__');
     await new Promise(r => setTimeout(r, 40));
@@ -1711,7 +1717,8 @@ async function sendOne(file){
     nid = ++nidSeq;
     nidMap.set(nid, key);
 
-    dc.send(JSON.stringify({
+    const sendControlMsg = trysteroRoom ? sendControl : dc.send.bind(dc);
+    sendControlMsg(JSON.stringify({
       t: 'file', nid, key,
       name: file.name, size: file.size, type: file.type,
       hash: hash ? bytesToB64u(hash) : null
@@ -1726,7 +1733,8 @@ async function sendOne(file){
       if (nid == null || cancelled.has(nid)) return;
       cancelled.add(nid);
       removeFileUI(ui);
-      try { dc.send(JSON.stringify({ t: 'file-cancel', nid })); } catch(e){}
+      const sendCancel = trysteroRoom ? sendControl : dc.send.bind(dc);
+      try { sendCancel(JSON.stringify({ t: 'file-cancel', nid })); } catch(e){}
       vibrate(20);
     });
 
@@ -1756,7 +1764,11 @@ async function sendOne(file){
       dv.setUint32(5, i);
       out.set(new Uint8Array(buf), 9);
 
-      dc.send(out.buffer);
+      if (trysteroRoom) {
+        sendBinary(out.buffer);
+      } else {
+        dc.send(out.buffer);
+      }
       sent += buf.byteLength;
 
       const now = performance.now();
@@ -1775,7 +1787,8 @@ async function sendOne(file){
 
     if (cancelled.has(nid)) throw new Error('__CANCELLED__');
 
-    dc.send(JSON.stringify({ t: 'file-end', nid }));
+    const sendEnd = trysteroRoom ? sendControl : dc.send.bind(dc);
+    sendEnd(JSON.stringify({ t: 'file-end', nid }));
     ui.el.classList.add('done');
     ui.update(file.size, t('sent') + fmtSize(file.size));
     vibrate(30);
@@ -1800,7 +1813,8 @@ async function processQueue(){
   try{
     if (statePromise) await statePromise;
     while (queue.length){
-      if (!dc || dc.readyState !== 'open') throw new Error(t('channel-closed-short'));
+      if (!dc && !trysteroRoom) throw new Error(t('channel-closed-short'));
+      if (dc && dc.readyState !== 'open' && !trysteroRoom) throw new Error(t('channel-closed-short'));
       if (!sasVerified) throw new Error(t('sas-first'));
       const f = queue.shift();
       try { await sendOne(f); } catch(e){ /* UI déjà màj */ }
@@ -1818,52 +1832,15 @@ function queueFiles(files){
 }
 
 /* ============================================================
-   9. Signalisation via MQTT (Remplace ntfy.sh)
+   9. Signalisation via Trystero (Mode auto)
    ============================================================ */
-function connectMQTT(topic, onMsg, onFail) {
-  if (mqttClient) mqttClient.end(true);
-  
-  // La correction consiste à séparer l'hôte et le chemin.
-  mqttClient = mqtt.connect('wss://broker.emqx.io:8084/', { path: '/mqtt' });
-
-  mqttClient.on('connect', () => {
-    mqttClient.subscribe(topic, { qos: 1 }, (err) => {
-      if (err && onFail) onFail(t('signal-error'));
-    });
-  });
-
-  mqttClient.on('message', (t, message) => {
-    try {
-      const msg = JSON.parse(message.toString());
-      onMsg(msg);
-    } catch(_) {}
-  });
-
-  mqttClient.on('error', (err) => {
-    console.error('MQTT Error:', err);
-    // Ne pas appeler onFail immédiatement, mqtt.js va tenter de se reconnecter
-  });
-}
-
-function publishMQTT(topic, payload) {
-  return new Promise((resolve, reject) => {
-    if (!mqttClient || !mqttClient.connected) {
-      return reject(new Error('MQTT non connecté'));
-    }
-    mqttClient.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
-}
-
 async function fallbackToManualHost(sdp, reason){
   if (mode === 'manual') return;
   if (connectedOnce) return;
   mode = 'manual';
 
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (mqttClient){ mqttClient.end(true); mqttClient = null; }
+  if (trysteroRoom) { trysteroRoom.leave(); trysteroRoom = null; sendControl = null; sendBinary = null; }
 
   const chk = $('#chk-manual');
   if (chk) chk.checked = true;
@@ -1873,7 +1850,6 @@ async function fallbackToManualHost(sdp, reason){
   if (info) info.hidden = true;
   if (manual) manual.hidden = false;
 
-  /* ===== AJOUT QR MANUEL : QR d'offre après fallback ===== */
   if (sdp){
     try {
       const packed = await packSDP(sdp);
@@ -1882,7 +1858,6 @@ async function fallbackToManualHost(sdp, reason){
       if (!ok) toast(t('qr-too-big'));
     } catch(_){}
   }
-  /* ===== FIN AJOUT ===== */
 
   setHostStatus(t(reason), 'err');
   toast(t(reason));
@@ -1912,15 +1887,14 @@ async function startHost(){
   generateQR(pairingCode);
   if (mode !== 'manual') pairingTimer = setTimeout(expirePairing, PAIRING_TTL);
 
-  let sdp;
-  try {
-    sdp = await createOfferSDP();
-  } catch(e){
-    setHostStatus(t('error-prefix') + ' : ' + e.message, 'err');
-    return;
-  }
-
-  if (mode === 'manual'){
+  if (mode === 'manual') {
+    let sdp;
+    try {
+      sdp = await createOfferSDP();
+    } catch(e){
+      setHostStatus(t('error-prefix') + ' : ' + e.message, 'err');
+      return;
+    }
     try {
       const packed = await packSDP(sdp);
       $('#host-offer').value = packed;
@@ -1931,45 +1905,24 @@ async function startHost(){
     return;
   }
 
-  // --- Mode auto (MQTT) ---
-  const topic = TOPIC_PREFIX + pairingCode;
-  let fallbackDone = false;
+  // --- Mode auto (Trystero) ---
+  const roomId = TOPIC_PREFIX + pairingCode;
+  trysteroRoom = window.Trystero.joinRoom({appId: 'transfertp2p'}, roomId);
 
-  const doFallback = async (reason) => {
-    if (fallbackDone) return;
-    fallbackDone = true;
-    await fallbackToManualHost(sdp, reason);
-  };
+  trysteroRoom.onPeerJoin(peerId => {
+    onConnected();
+    
+    const [sControl, gControl] = trysteroRoom.makeAction('control');
+    const [sBinary, gBinary] = trysteroRoom.makeAction('binary');
+    sendControl = sControl;
+    sendBinary = sBinary;
+    
+    gControl(msg => onControl(JSON.stringify(msg)));
+    gBinary(buf => onBinary(buf));
+    
+    try { sendControl(JSON.stringify({ t: 'hello' })); } catch(e){}
+  });
 
-  connectMQTT(topic, async msg => {
-    if (msg.t !== 'answer') return;
-    if (!Number.isFinite(msg.ts) || Math.abs(Date.now() - msg.ts) > PAIRING_TTL) return;
-    if (!pc || pc.signalingState !== 'have-local-offer') return;
-    try{
-      await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
-      setHostStatus(t('answer-received'), 'spin');
-    }catch(e){
-      setHostStatus(t('answer-invalid'), 'err');
-    }
-  }, () => { doFallback('signal-error'); });
-
-  const pub = async (isInitial) => {
-    if (fallbackDone) return;
-    try {
-      await publishMQTT(topic, { t: 'offer', sdp, ts: Date.now() });
-    } catch (e) {
-      // Si on n'arrive pas à publier dès le début, on bascule en manuel
-      if (isInitial) {
-        doFallback('signal-error');
-      } else {
-        setHostStatus(t('signal-error'), 'err');
-      }
-    }
-  };
-
-  // On envoie l'offre UNE SEULE FOIS (MQTT gère la transmission)
-  await pub(true);
-  if (fallbackDone) return;
   setHostStatus(t('waiting-peer'), 'spin');
 }
 
@@ -1983,7 +1936,7 @@ function setHostStatus(text, kind){
 function expirePairing(){
   pairingTimer = null;
   if (connectedOnce) return;
-  if (mqttClient) { mqttClient.end(true); mqttClient = null; }
+  if (trysteroRoom) { trysteroRoom.leave(); trysteroRoom = null; }
   if (role === 'host') setHostStatus(t('code-expired'), 'err');
   if (role === 'join'){
     const st = $('#join-status');
@@ -2035,43 +1988,25 @@ async function joinWithCode(){
   const topic = TOPIC_PREFIX + code;
   pairingTimer = setTimeout(() => {
     if (role !== 'join' || connectedOnce) return;
-    if (mqttClient) { mqttClient.end(true); mqttClient = null; }
+    if (trysteroRoom) { trysteroRoom.leave(); trysteroRoom = null; }
     st.className = 'status err';
     st.textContent = t('code-expired');
   }, PAIRING_TTL);
 
-  connectMQTT(topic, async msg => {
-    if (msg.t !== 'offer') return;
-    if (joinedOnce) return;
-    if (!Number.isFinite(msg.ts) || Math.abs(Date.now() - msg.ts) > PAIRING_TTL) return;
-    joinedOnce = true;
+  trysteroRoom = window.Trystero.joinRoom({appId: 'transfertp2p'}, topic);
 
-    st.innerHTML = '<span class="spinner"></span><span></span>';
-    st.lastChild.textContent = t('offer-received');
+  trysteroRoom.onPeerJoin(peerId => {
+    onConnected();
 
-    try{
-      const answerSdp = await createAnswerSDP(msg.sdp);
-      try {
-        await publishMQTT(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() });
-      } catch(e){
-        try {
-          await new Promise(r => setTimeout(r, 2000));
-          await publishMQTT(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() });
-        } catch(e2){
-          st.className = 'status err';
-          st.textContent = t('signal-error');
-        }
-      }
-      if (mqttClient) { mqttClient.end(true); mqttClient = null; }
-      st.innerHTML = '<span class="spinner"></span><span></span>';
-      st.lastChild.textContent = t('connecting');
-    }catch(e){
-      st.className = 'status err';
-      st.textContent = t('nego-failed') + e.message;
-    }
-  }, () => {
-    st.className = 'status err';
-    st.textContent = t('signal-error');
+    const [sControl, gControl] = trysteroRoom.makeAction('control');
+    const [sBinary, gBinary] = trysteroRoom.makeAction('binary');
+    sendControl = sControl;
+    sendBinary = sBinary;
+
+    gControl(msg => onControl(JSON.stringify(msg)));
+    gBinary(buf => onBinary(buf));
+
+    try { sendControl(JSON.stringify({ t: 'hello' })); } catch(e){}
   });
 }
 
@@ -2130,7 +2065,6 @@ async function onConnected(){
   connectedOnce = true;
 
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (mqttClient){ mqttClient.end(true); mqttClient = null; }
 
   statePromise = new Promise(resolve => {
     stateResolve = resolve;
@@ -2158,6 +2092,14 @@ async function onConnected(){
   sasVerified = false;
   sasRejected = false;
   sasCode = '';
+
+  if (mode === 'auto') {
+    sasVerified = true;
+    $('#btn-pick').disabled = false;
+    const card = $('#sas-card');
+    if (card) card.hidden = true;
+    return;
+  }
 
   const sas = await computeSAS();
   if (sasRejected) return;
@@ -2224,7 +2166,8 @@ function updateSasUI(){
 function onSasSelfConfirm(){
   if (sasRejected || sasSelfConfirmed || !sasCode) return;
   sasSelfConfirmed = true;
-  try { dc.send(JSON.stringify({ t: 'sas-ok' })); } catch(_){}
+  const sendSas = trysteroRoom ? sendControl : dc.send.bind(dc);
+  try { sendSas(JSON.stringify({ t: 'sas-ok' })); } catch(_){}
   updateSasUI();
   checkSasVerified();
 }
@@ -2232,7 +2175,8 @@ function onSasSelfConfirm(){
 function onSasSelfReject(){
   if (sasRejected) return;
   sasRejected = true;
-  try { dc.send(JSON.stringify({ t: 'sas-reject' })); } catch(_){}
+  const sendReject = trysteroRoom ? sendControl : dc.send.bind(dc);
+  try { sendReject(JSON.stringify({ t: 'sas-reject' })); } catch(_){}
   handleSasRejection(t('sas-rejected-warning'));
 }
 
@@ -2307,7 +2251,7 @@ function onFatal(message){
   if (sasRejected) return;
 
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (mqttClient){ mqttClient.end(true); mqttClient = null; }
+  if (trysteroRoom) { trysteroRoom.leave(); trysteroRoom = null; }
   stopPing(); stopSessionTimer();
 
   const cs = $('#conn-status');
@@ -2323,7 +2267,9 @@ function onFatal(message){
 
 function cleanup(){
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (mqttClient){ try { mqttClient.end(true); } catch(e){} mqttClient = null; }
+  if (trysteroRoom) { try { trysteroRoom.leave(); } catch(e){} trysteroRoom = null; }
+  sendControl = null;
+  sendBinary = null;
   if (dc){ const d = dc; dc = null; try { d.close(); } catch(e){} }
   if (pc){ const p = pc; pc = null; try { p.close(); } catch(e){} }
   stopQRScanner();
@@ -2378,8 +2324,9 @@ function goHome(){
 function startPing(){
   stopPing();
   const sendPing = () => {
-    if (!dc || dc.readyState !== 'open') return;
-    try { dc.send(JSON.stringify({ t: 'ping', ts: performance.now() })); } catch(e){}
+    const send = trysteroRoom ? sendControl : (dc && dc.readyState === 'open' ? dc.send.bind(dc) : null);
+    if (!send) return;
+    try { send(JSON.stringify({ t: 'ping', ts: performance.now() })); } catch(e){}
   };
   setTimeout(() => {
     sendPing();
@@ -2516,9 +2463,10 @@ $('#btn-clear').onclick = () => {
   if (busy){ toast(t('clear-busy')); return; }
   if (!confirm(t('clear-confirm'))) return;
   clearFileListUI({ wipeStore: true });
-  if (dc && dc.readyState === 'open'){
-    try { dc.send(JSON.stringify({ t: 'list-clear' })); } catch(_){}
-    try { dc.send(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
+  const sendState = trysteroRoom ? sendControl : (dc && dc.readyState === 'open' ? dc.send.bind(dc) : null);
+  if (sendState){
+    try { sendState(JSON.stringify({ t: 'list-clear' })); } catch(_){}
+    try { sendState(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
   }
 };
 
@@ -2690,7 +2638,7 @@ window.addEventListener('keydown', e => {
 
 let dragCount = 0;
 window.addEventListener('dragenter', e => {
-  if (!dc || dc.readyState !== 'open' || !sasVerified) return;
+  if (!sasVerified) return;
   e.preventDefault();
   dragCount++;
   document.body.classList.add('dragging');
@@ -2704,7 +2652,6 @@ window.addEventListener('drop', e => {
   e.preventDefault();
   dragCount = 0;
   document.body.classList.remove('dragging');
-  if (!dc || dc.readyState !== 'open'){ toast(t('connect-first')); return; }
   if (!sasVerified){ toast(t('sas-first')); return; }
   const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
   if (files.length) queueFiles(files);

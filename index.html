@@ -19,12 +19,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-
-<!-- Intégration de Trystero (Stratégie BitTorrent) pour une fiabilité maximale -->
-<script type="module">
-  import { joinRoom } from 'https://esm.sh/trystero/torrent';
-  window.Trystero = { joinRoom };
-</script>
+<!-- Intégration de PeerJS pour la signalisation -->
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
 <style>
   *,*::before,*::after{box-sizing:border-box}
@@ -527,11 +523,6 @@
 (async function(){
 'use strict';
 
-// Attendre que Trystero soit chargé
-while (!window.Trystero) {
-  await new Promise(r => setTimeout(r, 50));
-}
-
 /* ============================================================
    0. i18n — FR / EN / IT / TR
    ============================================================ */
@@ -549,7 +540,7 @@ const I18N = {
     'receive-title': 'Recevoir des fichiers', 'receive-sub': "Saisis le code de l'autre téléphone",
     'manual-mode': 'Mode manuel', 'manual-suffix': '(sans serveur de signalisation)',
     'manual-desc': "Pas de serveur de signalisation ; échange manuel de l'offre et de la réponse WebRTC.",
-    'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique utilise le réseau BitTorrent (via Trystero) pour une connexion fiable. Le code à 6 chiffres expire après 5 minutes.",
+    'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique utilise le broker public PeerJS pour une connexion fiable. Le code à 6 chiffres expire après 5 minutes.",
     'hint-manual': "<strong>Mode manuel :</strong> aucun serveur de signalisation n'est utilisé. Tu devras échanger deux codes par copier-coller (SMS, messagerie…) ou en scannant les QR codes affichés. Le transfert des fichiers reste identique et pair-à-pair.",
     'pairing-code-label': "Code d'invitation",
     'pairing-code-hint': "Copie le code ou scanne le QR. La connexion se fera automatiquement.",
@@ -651,7 +642,7 @@ const I18N = {
     'receive-title': 'Receive files', 'receive-sub': "Enter the other phone's code",
     'manual-mode': 'Manual mode', 'manual-suffix': '(no signaling server)',
     'manual-desc': 'No signaling service; manually exchange the WebRTC offer and answer.',
-    'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing uses the decentralized BitTorrent network (via Trystero) for a reliable connection. The 6-digit code expires after 5 minutes.",
+    'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing uses the public PeerJS broker for a reliable connection. The 6-digit code expires after 5 minutes.",
     'hint-manual': "<strong>Manual mode:</strong> no signaling server is used. You will have to exchange two codes via copy/paste (SMS, messaging…) or by scanning the displayed QR codes. File transfer remains identical and peer-to-peer.",
     'pairing-code-label': 'Temporary invitation',
     'pairing-code-hint': 'Copy the code or scan its QR. The connection will happen automatically.',
@@ -1369,9 +1360,7 @@ const HIGH_WATER = 8 * 1024 * 1024;
 const LOW_WATER  = 1 * 1024 * 1024;
 
 let pc = null, dc = null;
-let trysteroRoom = null;
-let sendControl = null;
-let sendBinary = null;
+let peer = null, peerConnection = null;
 let mode = 'auto';
 let role = null;
 let pairingCode = '';
@@ -1497,7 +1486,7 @@ async function createAnswerSDP(offerSdp){
 }
 
 /* ============================================================
-   7. Data channel (Mode manuel)
+   7. Data channel
    ============================================================ */
 function setupChannel(channel){
   dc = channel;
@@ -1525,8 +1514,7 @@ function onControl(raw){
 
   switch (msg.t){
     case 'hello':
-      const sendHello = trysteroRoom ? sendControl : dc.send.bind(dc);
-      try { sendHello(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
+      try { dc.send(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
       break;
     case 'state':
       haveRemote = msg.have || {};
@@ -1540,8 +1528,7 @@ function onControl(raw){
       break;
     case 'list-clear':
       clearFileListUI({ wipeStore: true });
-      const sendState = trysteroRoom ? sendControl : dc.send.bind(dc);
-      try { sendState(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
+      try { dc.send(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
       toast(t('list-cleared-by-peer'));
       break;
     case 'file':
@@ -1565,13 +1552,11 @@ function onControl(raw){
         vibrate(25);
       }
       nidMap.delete(msg.nid);
-      const sendState2 = trysteroRoom ? sendControl : dc.send.bind(dc);
-      try { sendState2(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
+      try { dc.send(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
       break;
     }
     case 'ping':
-      const sendPong = trysteroRoom ? sendControl : dc.send.bind(dc);
-      try { sendPong(JSON.stringify({ t: 'pong', ts: msg.ts })); } catch(_){}
+      try { dc.send(JSON.stringify({ t: 'pong', ts: msg.ts })); } catch(_){}
       break;
     case 'pong':
       currentRtt = performance.now() - msg.ts;
@@ -1694,7 +1679,6 @@ function addDownloadActions(ui, st){
    8. Envoi
    ============================================================ */
 async function waitBuffer(nid){
-  if (trysteroRoom) return; // Trystero gère le buffer
   while (dc && dc.readyState === 'open' && dc.bufferedAmount > HIGH_WATER){
     if (nid != null && cancelled.has(nid)) throw new Error('__CANCELLED__');
     await new Promise(r => setTimeout(r, 40));
@@ -1717,8 +1701,7 @@ async function sendOne(file){
     nid = ++nidSeq;
     nidMap.set(nid, key);
 
-    const sendControlMsg = trysteroRoom ? sendControl : dc.send.bind(dc);
-    sendControlMsg(JSON.stringify({
+    dc.send(JSON.stringify({
       t: 'file', nid, key,
       name: file.name, size: file.size, type: file.type,
       hash: hash ? bytesToB64u(hash) : null
@@ -1733,8 +1716,7 @@ async function sendOne(file){
       if (nid == null || cancelled.has(nid)) return;
       cancelled.add(nid);
       removeFileUI(ui);
-      const sendCancel = trysteroRoom ? sendControl : dc.send.bind(dc);
-      try { sendCancel(JSON.stringify({ t: 'file-cancel', nid })); } catch(e){}
+      try { dc.send(JSON.stringify({ t: 'file-cancel', nid })); } catch(e){}
       vibrate(20);
     });
 
@@ -1764,11 +1746,7 @@ async function sendOne(file){
       dv.setUint32(5, i);
       out.set(new Uint8Array(buf), 9);
 
-      if (trysteroRoom) {
-        sendBinary(out.buffer);
-      } else {
-        dc.send(out.buffer);
-      }
+      dc.send(out.buffer);
       sent += buf.byteLength;
 
       const now = performance.now();
@@ -1787,8 +1765,7 @@ async function sendOne(file){
 
     if (cancelled.has(nid)) throw new Error('__CANCELLED__');
 
-    const sendEnd = trysteroRoom ? sendControl : dc.send.bind(dc);
-    sendEnd(JSON.stringify({ t: 'file-end', nid }));
+    dc.send(JSON.stringify({ t: 'file-end', nid }));
     ui.el.classList.add('done');
     ui.update(file.size, t('sent') + fmtSize(file.size));
     vibrate(30);
@@ -1813,8 +1790,7 @@ async function processQueue(){
   try{
     if (statePromise) await statePromise;
     while (queue.length){
-      if (!dc && !trysteroRoom) throw new Error(t('channel-closed-short'));
-      if (dc && dc.readyState !== 'open' && !trysteroRoom) throw new Error(t('channel-closed-short'));
+      if (!dc || dc.readyState !== 'open') throw new Error(t('channel-closed-short'));
       if (!sasVerified) throw new Error(t('sas-first'));
       const f = queue.shift();
       try { await sendOne(f); } catch(e){ /* UI déjà màj */ }
@@ -1832,15 +1808,15 @@ function queueFiles(files){
 }
 
 /* ============================================================
-   9. Signalisation via Trystero (Mode auto)
+   9. Signalisation via PeerJS (Mode auto)
    ============================================================ */
-async function fallbackToManualHost(sdp, reason){
+async function fallbackToManualHost(reason){
   if (mode === 'manual') return;
   if (connectedOnce) return;
   mode = 'manual';
 
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (trysteroRoom) { trysteroRoom.leave(); trysteroRoom = null; sendControl = null; sendBinary = null; }
+  if (peer) { peer.destroy(); peer = null; }
 
   const chk = $('#chk-manual');
   if (chk) chk.checked = true;
@@ -1850,14 +1826,16 @@ async function fallbackToManualHost(sdp, reason){
   if (info) info.hidden = true;
   if (manual) manual.hidden = false;
 
-  if (sdp){
-    try {
+  // Générer l'offre manuellement si ce n'est pas déjà fait
+  try {
+    if (!pc) {
+      const sdp = await createOfferSDP();
       const packed = await packSDP(sdp);
       $('#host-offer').value = packed;
       const ok = renderQrPayload($('#host-offer-qr'), packed);
       if (!ok) toast(t('qr-too-big'));
-    } catch(_){}
-  }
+    }
+  } catch(_){}
 
   setHostStatus(t(reason), 'err');
   toast(t(reason));
@@ -1905,26 +1883,35 @@ async function startHost(){
     return;
   }
 
-  // --- Mode auto (Trystero BitTorrent) ---
+  // --- Mode auto (PeerJS) ---
   const roomId = TOPIC_PREFIX + pairingCode;
   
-  trysteroRoom = window.Trystero.joinRoom({ appId: 'transfertp2p' }, roomId);
+  peer = new Peer(roomId);
 
-  trysteroRoom.onPeerJoin(peerId => {
-    onConnected();
-    
-    const [sControl, gControl] = trysteroRoom.makeAction('control');
-    const [sBinary, gBinary] = trysteroRoom.makeAction('binary');
-    sendControl = sControl;
-    sendBinary = sBinary;
-    
-    gControl(msg => onControl(JSON.stringify(msg)));
-    gBinary(buf => onBinary(buf));
-    
-    try { sendControl(JSON.stringify({ t: 'hello' })); } catch(e){}
+  peer.on('open', (id) => {
+    setHostStatus(t('waiting-peer'), 'spin');
   });
 
-  setHostStatus(t('waiting-peer'), 'spin');
+  peer.on('connection', (conn) => {
+    peerConnection = conn;
+    // Extraction du DataChannel natif pour utiliser la logique existante
+    const dataChannel = conn.dataChannel || conn._dc;
+    if (dataChannel) {
+      setupChannel(dataChannel);
+    } else {
+      onFatal("Erreur de connexion interne : DataChannel introuvable.");
+    }
+  });
+
+  peer.on('error', (err) => {
+    console.error('PeerJS Error:', err);
+    if (err.type === 'unavailable-id') {
+      toast("Ce code est déjà utilisé. Veuillez réessayer.");
+      goHome();
+    } else {
+      fallbackToManualHost('signal-error');
+    }
+  });
 }
 
 function setHostStatus(text, kind){
@@ -1937,7 +1924,7 @@ function setHostStatus(text, kind){
 function expirePairing(){
   pairingTimer = null;
   if (connectedOnce) return;
-  if (trysteroRoom) { trysteroRoom.leave(); trysteroRoom = null; }
+  if (peer) { peer.destroy(); peer = null; }
   if (role === 'host') setHostStatus(t('code-expired'), 'err');
   if (role === 'join'){
     const st = $('#join-status');
@@ -1989,25 +1976,38 @@ async function joinWithCode(){
   const topic = TOPIC_PREFIX + code;
   pairingTimer = setTimeout(() => {
     if (role !== 'join' || connectedOnce) return;
-    if (trysteroRoom) { trysteroRoom.leave(); trysteroRoom = null; }
+    if (peer) { peer.destroy(); peer = null; }
     st.className = 'status err';
     st.textContent = t('code-expired');
   }, PAIRING_TTL);
 
-  trysteroRoom = window.Trystero.joinRoom({ appId: 'transfertp2p' }, topic);
+  peer = new Peer(); // ID aléatoire pour le récepteur
 
-  trysteroRoom.onPeerJoin(peerId => {
-    onConnected();
+  peer.on('open', () => {
+    const conn = peer.connect(topic, { reliable: true });
+    peerConnection = conn;
 
-    const [sControl, gControl] = trysteroRoom.makeAction('control');
-    const [sBinary, gBinary] = trysteroRoom.makeAction('binary');
-    sendControl = sControl;
-    sendBinary = sBinary;
+    conn.on('open', () => {
+      const dataChannel = conn.dataChannel || conn._dc;
+      if (dataChannel) {
+        setupChannel(dataChannel);
+      } else {
+        st.className = 'status err';
+        st.textContent = "Erreur : DataChannel introuvable.";
+      }
+    });
 
-    gControl(msg => onControl(JSON.stringify(msg)));
-    gBinary(buf => onBinary(buf));
+    conn.on('error', (err) => {
+      console.error('Connection Error:', err);
+      st.className = 'status err';
+      st.textContent = t('signal-error');
+    });
+  });
 
-    try { sendControl(JSON.stringify({ t: 'hello' })); } catch(e){}
+  peer.on('error', (err) => {
+    console.error('PeerJS Error:', err);
+    st.className = 'status err';
+    st.textContent = t('signal-error');
   });
 }
 
@@ -2167,8 +2167,7 @@ function updateSasUI(){
 function onSasSelfConfirm(){
   if (sasRejected || sasSelfConfirmed || !sasCode) return;
   sasSelfConfirmed = true;
-  const sendSas = trysteroRoom ? sendControl : dc.send.bind(dc);
-  try { sendSas(JSON.stringify({ t: 'sas-ok' })); } catch(_){}
+  try { dc.send(JSON.stringify({ t: 'sas-ok' })); } catch(_){}
   updateSasUI();
   checkSasVerified();
 }
@@ -2176,8 +2175,7 @@ function onSasSelfConfirm(){
 function onSasSelfReject(){
   if (sasRejected) return;
   sasRejected = true;
-  const sendReject = trysteroRoom ? sendControl : dc.send.bind(dc);
-  try { sendReject(JSON.stringify({ t: 'sas-reject' })); } catch(_){}
+  try { dc.send(JSON.stringify({ t: 'sas-reject' })); } catch(_){}
   handleSasRejection(t('sas-rejected-warning'));
 }
 
@@ -2252,7 +2250,7 @@ function onFatal(message){
   if (sasRejected) return;
 
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (trysteroRoom) { trysteroRoom.leave(); trysteroRoom = null; }
+  if (peer) { peer.destroy(); peer = null; }
   stopPing(); stopSessionTimer();
 
   const cs = $('#conn-status');
@@ -2268,9 +2266,8 @@ function onFatal(message){
 
 function cleanup(){
   if (pairingTimer){ clearTimeout(pairingTimer); pairingTimer = null; }
-  if (trysteroRoom) { try { trysteroRoom.leave(); } catch(e){} trysteroRoom = null; }
-  sendControl = null;
-  sendBinary = null;
+  if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
+  peerConnection = null;
   if (dc){ const d = dc; dc = null; try { d.close(); } catch(e){} }
   if (pc){ const p = pc; pc = null; try { p.close(); } catch(e){} }
   stopQRScanner();
@@ -2325,9 +2322,8 @@ function goHome(){
 function startPing(){
   stopPing();
   const sendPing = () => {
-    const send = trysteroRoom ? sendControl : (dc && dc.readyState === 'open' ? dc.send.bind(dc) : null);
-    if (!send) return;
-    try { send(JSON.stringify({ t: 'ping', ts: performance.now() })); } catch(e){}
+    if (!dc || dc.readyState !== 'open') return;
+    try { dc.send(JSON.stringify({ t: 'ping', ts: performance.now() })); } catch(e){}
   };
   setTimeout(() => {
     sendPing();
@@ -2464,10 +2460,9 @@ $('#btn-clear').onclick = () => {
   if (busy){ toast(t('clear-busy')); return; }
   if (!confirm(t('clear-confirm'))) return;
   clearFileListUI({ wipeStore: true });
-  const sendState = trysteroRoom ? sendControl : (dc && dc.readyState === 'open' ? dc.send.bind(dc) : null);
-  if (sendState){
-    try { sendState(JSON.stringify({ t: 'list-clear' })); } catch(_){}
-    try { sendState(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
+  if (dc && dc.readyState === 'open'){
+    try { dc.send(JSON.stringify({ t: 'list-clear' })); } catch(_){}
+    try { dc.send(JSON.stringify({ t: 'state', have: snapshotHave() })); } catch(_){}
   }
 };
 

@@ -1350,6 +1350,9 @@ const NTFY = 'https://ntfy.sh/';
 const TOPIC_PREFIX = 'ftx7q-';
 const PAIRING_TTL = 5 * 60 * 1000; // 5 min
 
+// ⚠️ Fréquences réduites pour éviter de spammer ntfy.sh (429)
+const OFFER_INTERVAL = 15 * 1000;  // republier l'offre toutes les 15 s (au lieu de 2.5 s)
+
 /* ============================================================
    4. État global
    ============================================================ */
@@ -1805,12 +1808,20 @@ function queueFiles(files){
 }
 
 /* ============================================================
-   9. Signalisation — sans HMAC (6 chiffres trop faibles)
+   9. Signalisation
    La sécurité est assurée par le SAS post-connexion.
+
+   → Pour limiter les requêtes vers ntfy.sh :
+     • offer republiée toutes les OFFER_INTERVAL (15 s) au lieu de 2.5 s
+     • answer publiée 1 seule fois (avec 1 retry si échec réseau)
+     • EventSource fermé après 4 erreurs pour éviter la boucle
+       de reconnexion automatique du navigateur (qui spamme)
+     • Retry-After respecté en cas de 429
    ============================================================ */
 function subscribe(topic, onMsg, onFail){
   const src = new EventSource(NTFY + topic + '/sse');
   let errors = 0;
+  let closed = false;
   src.onopen = () => { errors = 0; };
   src.onmessage = ev => {
     try{
@@ -1819,11 +1830,35 @@ function subscribe(topic, onMsg, onFail){
       onMsg(JSON.parse(d.message));
     }catch(_){}
   };
-  src.onerror = () => { if (++errors >= 4 && onFail) onFail(); };
+  src.onerror = () => {
+    if (closed) return;
+    if (++errors >= 4) {
+      closed = true;
+      try { src.close(); } catch(_){}
+      if (onFail) onFail();
+    }
+  };
   return src;
 }
-async function publish(topic, payload){
-  const response = await fetch(NTFY + topic, { method: 'POST', body: JSON.stringify(payload) });
+
+async function publish(topic, payload, attempt){
+  attempt = attempt || 0;
+  let response;
+  try {
+    response = await fetch(NTFY + topic, { method: 'POST', body: JSON.stringify(payload) });
+  } catch (e) {
+    if (attempt < 2) {
+      await new Promise(r => setTimeout(r, 2000));
+      return publish(topic, payload, attempt + 1);
+    }
+    throw e;
+  }
+  if (response.status === 429) {
+    if (attempt >= 2) throw new Error('Signalisation HTTP 429');
+    const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
+    await new Promise(r => setTimeout(r, retryAfter * 1000));
+    return publish(topic, payload, attempt + 1);
+  }
   if (!response.ok) throw new Error('Signalisation HTTP ' + response.status);
 }
 
@@ -1875,7 +1910,8 @@ async function startHost(){
         catch(_) { setHostStatus(t('signal-error'), 'err'); }
       };
       pub();
-      offerTimer = setInterval(pub, 2500);
+      // ↓ Intervalle porté à 15 s : ~20 POST maxi sur 5 min au lieu de ~120
+      offerTimer = setInterval(pub, OFFER_INTERVAL);
       setHostStatus(t('waiting-peer'), 'spin');
     }
   }catch(e){
@@ -1962,9 +1998,17 @@ async function joinWithCode(){
 
     try{
       const answerSdp = await createAnswerSDP(msg.sdp);
-      for (let i = 0; i < 3; i++){
-        publish(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() }).catch(() => {});
-        await new Promise(r => setTimeout(r, 400));
+      // ↓ Envoi unique (au lieu de 3x) avec 1 retry en cas d'échec réseau
+      try {
+        await publish(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() });
+      } catch(e){
+        try {
+          await new Promise(r => setTimeout(r, 2000));
+          await publish(topic, { t: 'answer', sdp: answerSdp, ts: Date.now() });
+        } catch(e2) {
+          st.className = 'status err';
+          st.textContent = t('signal-error');
+        }
       }
       if (es) { es.close(); es = null; }
       st.innerHTML = '<span class="spinner"></span><span></span>';

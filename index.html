@@ -298,6 +298,16 @@
   #qr-scanner-video{width:100%;max-width:360px;border-radius:16px;display:block;margin:0 auto 12px;background:#000;}
   .scanner-box{text-align:center;padding:12px;}
   .scanner-box video{max-height:50vh;object-fit:cover;}
+
+  .qr-overlay{
+    position:fixed;inset:0;z-index:95;
+    background:rgba(0,0,0,.82);
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .qr-overlay[hidden]{display:none}
+  .qr-overlay .scanner-box{max-width:420px;width:100%;margin:0}
 </style>
 </head>
 <body>
@@ -376,13 +386,16 @@
        <div class="status" id="host-status" role="status" aria-live="polite"><span class="spinner"></span><span data-i18n="preparing">Préparation…</span></div>
     </div>
 
+    <!-- MODE MANUEL -->
     <div id="host-manual" hidden>
       <label data-i18n="manual-step-1-host">1 · Ton code à transmettre</label>
       <textarea id="host-offer" readonly placeholder="…"></textarea>
+      <div id="host-offer-qr" class="qr-container" hidden></div>
       <button class="btn ghost" id="btn-copy-offer" style="margin-top:8px">📋 <span data-i18n="manual-copy-code">Copier ce code</span></button>
 
       <label data-i18n="manual-step-2-host">2 · Colle la réponse de l'autre téléphone</label>
       <textarea id="host-answer-in" data-i18n-placeholder="answer-placeholder" placeholder="Colle ici la réponse reçue…"></textarea>
+      <button class="btn ghost" id="btn-scan-answer-qr" style="margin-top:8px" type="button">📷 <span data-i18n="scan-answer-qr">Scanner la réponse QR</span></button>
       <button class="btn primary" id="btn-host-connect" style="margin-top:12px" data-i18n="connect">Connecter</button>
     </div>
 
@@ -401,20 +414,17 @@
       <div class="status" id="join-status" role="status" aria-live="polite" hidden><span class="spinner"></span><span data-i18n="searching">Recherche…</span></div>
     </div>
 
-    <div id="qr-scanner-box" class="card scanner-box" hidden>
-      <video id="qr-scanner-video" playsinline muted></video>
-      <p class="hint" style="text-align:center" data-i18n="scan-hint">Pointez la caméra vers le QR code de l'expéditeur.</p>
-      <button class="btn ghost" id="btn-close-scanner" type="button" data-i18n="close">Fermer</button>
-    </div>
-
+    <!-- MODE MANUEL -->
     <div id="join-manual" hidden>
       <label data-i18n="manual-step-1-join">1 · Colle le code de l'autre téléphone</label>
       <textarea id="join-offer-in" data-i18n-placeholder="offer-placeholder" placeholder="Colle ici le code de l'expéditeur…"></textarea>
+      <button class="btn ghost" id="btn-scan-offer-qr" style="margin-top:8px" type="button">📷 <span data-i18n="scan-offer-qr">Scanner le QR de l'offre</span></button>
       <button class="btn primary" id="btn-join-gen" style="margin-top:12px" data-i18n="generate-answer">Générer ma réponse</button>
 
       <div id="join-answer-box" hidden>
         <label data-i18n="manual-step-2-join">2 · Renvoie cette réponse à l'expéditeur</label>
         <textarea id="join-answer-out" readonly></textarea>
+        <div id="join-answer-qr" class="qr-container" hidden></div>
         <button class="btn ghost" id="btn-copy-answer" style="margin-top:8px">📋 <span data-i18n="copy-answer">Copier la réponse</span></button>
       </div>
     </div>
@@ -468,6 +478,15 @@
 
 </div>
 
+<!-- Overlay du scanner QR (global) -->
+<div id="qr-scanner-box" class="qr-overlay" hidden>
+  <div class="card scanner-box">
+    <video id="qr-scanner-video" playsinline muted></video>
+    <p class="hint" style="text-align:center" data-i18n="scan-hint">Pointez la caméra vers le QR code de l'expéditeur.</p>
+    <button class="btn ghost" id="btn-close-scanner" type="button" data-i18n="close">Fermer</button>
+  </div>
+</div>
+
 <footer class="footer">
   <span data-i18n="footer-dev">Développé par</span>
   <a href="https://bstudio136.github.io/mylink/" target="_blank" rel="noopener" id="footer-link">Bstudio136</a>
@@ -498,7 +517,7 @@ const I18N = {
     'manual-mode': 'Mode manuel', 'manual-suffix': '(sans serveur de signalisation)',
     'manual-desc': "Pas de serveur de signalisation ; échange manuel de l'offre et de la réponse WebRTC.",
     'hint-auto': "Les fichiers voyagent <strong>directement</strong> entre les appareils : aucun fichier n'est stocké sur le service de signalisation. Le mode automatique transmet à ntfy.sh les informations temporaires nécessaires à WebRTC. Le code à 6 chiffres expire après 5 minutes. <strong>Après connexion, un code de sécurité (SAS) est affiché sur les deux appareils : compare-les pour détecter une éventuelle interception.</strong>",
-    'hint-manual': "<strong>Mode manuel :</strong> aucun serveur de signalisation n'est utilisé. Tu devras échanger deux codes par copier-coller (SMS, messagerie…). Le transfert des fichiers reste identique et pair-à-pair.",
+    'hint-manual': "<strong>Mode manuel :</strong> aucun serveur de signalisation n'est utilisé. Tu devras échanger deux codes par copier-coller (SMS, messagerie…) ou en scannant les QR codes affichés. Le transfert des fichiers reste identique et pair-à-pair.",
     'pairing-code-label': "Code d'invitation",
     'pairing-code-hint': "Copie le code ou scanne le QR. Vérifie ensuite le code de sécurité affiché sur les deux appareils.",
     'copy': 'Copier', 'share': 'Partager',
@@ -571,6 +590,9 @@ const I18N = {
     'share-text': "Code Transfert P2P : {code}\nOuvre l'app et appuie sur « Recevoir ».",
     'share-title': 'Transfert P2P',
     'lang-menu-label': 'Choisir la langue',
+    'scan-answer-qr': 'Scanner la réponse QR',
+    'scan-offer-qr': "Scanner le QR de l'offre",
+    'qr-too-big': 'QR trop volumineux — utilise le copier-coller',
     /* SAS */
     'sas-title': "Vérification de l'appareil",
     'sas-hint': "<strong>Compare ce code avec l'autre appareil</strong> (de vive voix, par appel, etc.). Ils doivent être <strong>identiques</strong>. Ne clique sur ✓ que si tu as vraiment vérifié.",
@@ -597,7 +619,7 @@ const I18N = {
     'manual-mode': 'Manual mode', 'manual-suffix': '(no signaling server)',
     'manual-desc': 'No signaling service; manually exchange the WebRTC offer and answer.',
     'hint-auto': "Files travel <strong>directly</strong> between devices: no file is stored by the signaling service. Automatic pairing sends temporary WebRTC connection details through ntfy.sh. The 6-digit code expires after 5 minutes. <strong>After connecting, a security code (SAS) is shown on both devices: compare them to detect interception.</strong>",
-    'hint-manual': "<strong>Manual mode:</strong> no signaling server is used. You will have to exchange two codes via copy/paste (SMS, messaging…). File transfer remains identical and peer-to-peer.",
+    'hint-manual': "<strong>Manual mode:</strong> no signaling server is used. You will have to exchange two codes via copy/paste (SMS, messaging…) or by scanning the displayed QR codes. File transfer remains identical and peer-to-peer.",
     'pairing-code-label': 'Temporary invitation',
     'pairing-code-hint': 'Copy the code or scan its QR. Then verify the security code on both devices.',
     'copy': 'Copy', 'share': 'Share',
@@ -670,6 +692,9 @@ const I18N = {
     'share-text': 'P2P Transfer code: {code}\nOpen the app and tap "Receive".',
     'share-title': 'P2P Transfer',
     'lang-menu-label': 'Choose language',
+    'scan-answer-qr': 'Scan the answer QR',
+    'scan-offer-qr': 'Scan the offer QR',
+    'qr-too-big': 'QR too big — use copy-paste',
     'sas-title': 'Device verification',
     'sas-hint': "<strong>Compare this code with the other device</strong> (in person, by call, etc.). They must be <strong>identical</strong>. Only click ✓ if you really checked.",
     'sas-confirm': '✓ They match',
@@ -695,7 +720,7 @@ const I18N = {
     'manual-mode': 'Modalità manuale', 'manual-suffix': '(senza server di segnalazione)',
     'manual-desc': 'Nessun servizio di segnalazione; scambia manualmente offerta e risposta WebRTC.',
     'hint-auto': "I file viaggiano <strong>direttamente</strong> da un dispositivo all'altro: nessun file viene memorizzato su un server. Il codice a 6 cifre scade dopo 5 minuti. <strong>Dopo la connessione, un codice di sicurezza (SAS) viene mostrato su entrambi i dispositivi: confrontali per rilevare un'intercettazione.</strong>",
-    'hint-manual': "<strong>Modalità manuale:</strong> nessun server di segnalazione viene utilizzato. Dovrai scambiare due codici tramite copia/incolla (SMS, messaggistica…). Il trasferimento dei file rimane identico e peer-to-peer.",
+    'hint-manual': "<strong>Modalità manuale:</strong> nessun server di segnalazione viene utilizzato. Dovrai scambiare due codici tramite copia/incolla (SMS, messaggistica…) o scansionando i QR code visualizzati. Il trasferimento dei file rimane identico e peer-to-peer.",
     'pairing-code-label': 'Invito temporaneo',
     'pairing-code-hint': 'Copia il codice o scansiona il QR. Verifica poi il codice di sicurezza sui due dispositivi.',
     'copy': 'Copia', 'share': 'Condividi',
@@ -768,6 +793,9 @@ const I18N = {
     'share-text': "Codice Trasferimento P2P: {code}\nApri l'app e tocca « Ricevi ».",
     'share-title': 'Trasferimento P2P',
     'lang-menu-label': 'Scegli la lingua',
+    'scan-answer-qr': 'Scansiona il QR della risposta',
+    'scan-offer-qr': "Scansiona il QR dell'offerta",
+    'qr-too-big': 'QR troppo grande — usa copia-incolla',
     'sas-title': 'Verifica del dispositivo',
     'sas-hint': "<strong>Confronta questo codice con l'altro dispositivo</strong> (di persona, per telefono, ecc.). Devono essere <strong>identici</strong>. Clicca ✓ solo se hai verificato davvero.",
     'sas-confirm': '✓ Corrispondono',
@@ -793,7 +821,7 @@ const I18N = {
     'manual-mode': 'Manuel mod', 'manual-suffix': '(sinyal sunucusu olmadan)',
     'manual-desc': 'Sinyal hizmeti kullanmaz; WebRTC teklifini ve yanıtını elle değiş tokuş et.',
     'hint-auto': "Dosyalar doğrudan bir cihazdan diğerine gider: hiçbir dosya sunucuda saklanmaz. 6 haneli kod 5 dakika sonra geçersiz olur. <strong>Bağlantıdan sonra her iki cihazda bir güvenlik kodu (SAS) gösterilir: araya girme olup olmadığını anlamak için bunları karşılaştır.</strong>",
-    'hint-manual': "<strong>Manuel mod:</strong> hiçbir sinyal sunucusu kullanılmaz. İki kodu kopyala-yapıştır (SMS, mesajlaşma…) ile değiştirmen gerekecek. Dosya transferi aynı kalır ve eşler arasıdır.",
+    'hint-manual': "<strong>Manuel mod:</strong> hiçbir sinyal sunucusu kullanılmaz. İki kodu kopyala-yapıştır (SMS, mesajlaşma…) veya gösterilen QR kodlarını tarayarak değiştirmen gerekecek. Dosya transferi aynı kalır ve eşler arasıdır.",
     'pairing-code-label': 'Geçici davet',
     'pairing-code-hint': 'Kodu kopyala veya QR kodunu tara. Ardından iki cihazdaki güvenlik kodunu karşılaştır.',
     'copy': 'Kopyala', 'share': 'Paylaş',
@@ -866,6 +894,9 @@ const I18N = {
     'share-text': 'P2P Transfer kodu: {code}\nUygulamayı aç ve « Al » düğmesine bas.',
     'share-title': 'P2P Transfer',
     'lang-menu-label': 'Dil seç',
+    'scan-answer-qr': 'Yanıt QR kodunu tara',
+    'scan-offer-qr': 'Teklif QR kodunu tara',
+    'qr-too-big': 'QR çok büyük — kopyala-yapıştır kullan',
     'sas-title': 'Cihaz doğrulama',
     'sas-hint': "<strong>Bu kodu diğer cihazla karşılaştır</strong> (yüz yüze, telefonla vb.). <strong>Aynı olmalılar</strong>. Yalnızca gerçekten kontrol ettiysen ✓ tıkla.",
     'sas-confirm': '✓ Aynılar',
@@ -1185,6 +1216,25 @@ function clearFileListUI(opts){
     nidMap.clear();
   }
   $('#file-list').innerHTML = '';
+}
+
+function renderQrPayload(container, payload){
+  if (!container) return false;
+  if (!payload){ container.innerHTML = ''; container.hidden = true; return false; }
+  if (typeof qrcode === 'undefined'){ container.hidden = true; return false; }
+  try {
+    // 'L' = capacité max (2953 octets)
+    const qr = qrcode(0, 'L');
+    qr.addData(payload);
+    qr.make();
+    container.innerHTML = qr.createImgTag(4, 4);
+    container.hidden = false;
+    return true;
+  } catch (e) {
+    container.innerHTML = '';
+    container.hidden = true;
+    return false;
+  }
 }
 
 /* ============================================================
@@ -1770,6 +1820,8 @@ async function startHost(){
   $('#host-manual').hidden = (mode !== 'manual');
   $('#host-offer').value = '';
   $('#host-answer-in').value = '';
+  const hostOfferQr = $('#host-offer-qr');
+  if (hostOfferQr){ hostOfferQr.innerHTML = ''; hostOfferQr.hidden = true; }
   clearFileListUI();
   setHostStatus(t('preparing'), 'spin');
   showView('v-host');
@@ -1781,7 +1833,12 @@ async function startHost(){
     const sdp = await createOfferSDP();
 
     if (mode === 'manual'){
-      $('#host-offer').value = await packSDP(sdp);
+      try {
+        const packed = await packSDP(sdp);
+        $('#host-offer').value = packed;
+        const ok = renderQrPayload($('#host-offer-qr'), packed);
+        if (!ok) toast(t('qr-too-big'));
+      } catch(_){}
       setHostStatus(t('manual-step-2-host'), '');
     }else{
       const topic = TOPIC_PREFIX + pairingCode;
@@ -1940,7 +1997,10 @@ async function manualJoinGenerate(){
   try{
     const offerSdp = await unpackSDP(raw);
     const answerSdp = await createAnswerSDP(offerSdp);
-    $('#join-answer-out').value = await packSDP(answerSdp);
+    const packed = await packSDP(answerSdp);
+    $('#join-answer-out').value = packed;
+    const ok = renderQrPayload($('#join-answer-qr'), packed);
+    if (!ok) toast(t('qr-too-big'));
     $('#join-answer-box').hidden = false;
     $('#join-status').hidden = false;
     $('#join-status').className = 'status';
@@ -2204,6 +2264,11 @@ function cleanup(){
 
   const stats = $('#stats');
   if (stats) stats.hidden = true;
+  
+  const hostOfferQr = $('#host-offer-qr');
+  if (hostOfferQr){ hostOfferQr.innerHTML = ''; hostOfferQr.hidden = true; }
+  const joinAnswerQr = $('#join-answer-qr');
+  if (joinAnswerQr){ joinAnswerQr.innerHTML = ''; joinAnswerQr.hidden = true; }
 }
 
 function goHome(){
@@ -2342,6 +2407,11 @@ $('#btn-receive').onclick = () => {
   $('#join-answer-box').hidden = true;
   $('#join-offer-in').value = '';
   $('#join-answer-out').value = '';
+  
+  // Reset QR de réponse
+  const joinAnswerQr = $('#join-answer-qr');
+  if (joinAnswerQr){ joinAnswerQr.innerHTML = ''; joinAnswerQr.hidden = true; }
+  
   showView('v-join');
   if (!manual) setTimeout(() => $('#join-code').focus(), 150);
 };
@@ -2409,7 +2479,7 @@ let qrScannerStream = null;
 let qrScanInterval = null;
 let qrScannerActive = false;
 
-$('#btn-scan-qr').onclick = async () => {
+async function startQRScan(onResult){
   const box = $('#qr-scanner-box');
   const video = $('#qr-scanner-video');
   box.hidden = false;
@@ -2455,14 +2525,7 @@ $('#btn-scan-qr').onclick = async () => {
 
       if (code) {
         stopQRScanner();
-        const m = code.match(/#join=(\d{6})/);
-        const found = m ? m[1] : (code.match(/\d{6}/) || [])[0];
-        if (found) {
-          $('#join-code').value = found;
-          joinWithCode();
-        } else {
-          toast(t('code-invalid') + code);
-        }
+        onResult(code);
         return;
       }
 
@@ -2475,7 +2538,31 @@ $('#btn-scan-qr').onclick = async () => {
     toast(t('camera-unavailable') + e.message);
     box.hidden = true;
   }
-};
+}
+
+/* Bouton scanner principal (mode auto) */
+$('#btn-scan-qr').onclick = () => startQRScan(code => {
+  const m = code.match(/#join=(\d{6})/);
+  const found = m ? m[1] : (code.match(/\d{6}/) || [])[0];
+  if (found) {
+    $('#join-code').value = found;
+    joinWithCode();
+  } else {
+    toast(t('code-invalid') + code);
+  }
+});
+
+/* Bouton scanner manuel : réponse (hôte) */
+$('#btn-scan-answer-qr').onclick = () => startQRScan(async payload => {
+  $('#host-answer-in').value = payload;
+  await manualHostConnect();
+});
+
+/* Bouton scanner manuel : offre (receveur) */
+$('#btn-scan-offer-qr').onclick = () => startQRScan(async payload => {
+  $('#join-offer-in').value = payload;
+  await manualJoinGenerate();
+});
 
 $('#btn-close-scanner').onclick = stopQRScanner;
 
